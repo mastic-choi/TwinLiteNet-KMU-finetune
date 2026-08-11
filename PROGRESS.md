@@ -417,8 +417,37 @@ UMK `track_drive` 패키지가 쓰는 원조 TwinLiteNet(da/ll 듀얼헤드)이 
   - 참고: ll pseudo label은 YOLOPv2(외부 사전학습, letterbox 버그 체인과 완전
     무관)에서 나온 거라 이 문제와 무관함 — da에만 해당.
 
+### 2.13 GitHub 레포 생성 + README 정리
+
+- 이 프로젝트가 지금까지 git 저장소가 아니었음 → `git init` + `.gitignore`(데이터셋/
+  모델가중치/외부 클론 레포/venv 제외, 코드+문서+몽타주 이미지만 추적) 세팅 후
+  **private** 레포로 GitHub에 올림: https://github.com/mastic-choi/TwinLiteNet-KMU-finetune
+  (`gh repo create`로 생성, `mastic-choi` 계정).
+- `README.md` 작성 — 배경(원조 TwinLiteNet 실패 사례), 베이스 모델(TwinLiteNetPlus)
+  링크, 학습 방법론 요약(데이터 다이어트→CVAT 라벨링→완전자동 pseudo-labeling→
+  letterbox 버그/편향 대물림/체크포인트 버그 발견·수정→검증 방법론→Colab/로컬
+  학습 환경), 관련 레포(TwinLiteNetPlus/TwinLiteNet/YOLOPv2/UMK) 링크.
+- `outputs/montages/`(24장)·`outputs/scratch/`(27장)도 추적 대상에 포함(용량
+  ~107MB, 개별 파일 최대 18MB로 GitHub 제한 안 걸림) — `outputs/onnx/`(모델
+  가중치)만 계속 제외. README에 "결과 (몽타주)" 섹션 추가해서 대표 몽타주 4개
+  (3-way 비교/bootstrap_v2 커브 비교/da 과다포함 검증/pseudo_dataset_v2 스팟체크)
+  이미지로 직접 임베드함.
+- **[사용자 판단 보류]** "TwinLiteNetPlus를 포크했어야 하지 않나?"는 질문에 —
+  실제 코드 패치(BDD100K.py/loss.py/utils.py)가 노트북 cell 안 문자열 치환으로
+  런타임에만 적용되고 정적으로 커밋된 적이 없어서, 지금 형태(별도 레포)가 더
+  적합했다고 판단. 다만 **패치된 최종 파일 스냅샷(또는 .patch)을 이 레포에
+  커밋해두면 원본 대비 diff가 명확해질 것**이라는 개선안은 사용자가 "이따가"로
+  보류함 — 나중에 요청 있으면 진행.
+
 ## 3. 다음 할 일 (미완료, 우선순위 순)
 
+-1. **[대기, 사용자 요청 2026-08-11]** 9070 XT(로컬 Windows/ROCm) medium 학습 끝나고
+    모델 받으면, **그 모델 vs 순정 TwinLiteNet 비교 GIF** 만들어서 README "결과"
+    섹션에 추가할 것. 기존 몽타주 스크립트들(`compare_bootstrap_v2_da.py` 등)의
+    프레임 선정/추론/오버레이 로직 재사용 가능 — 정적 그리드 대신 애니메이션(GIF)
+    형식으로 만드는 부분만 새로 작성하면 됨(예: 여러 프레임을 순환하거나, old/new
+    오버레이를 번갈아 보여주는 방식 — 어느 쪽이 좋을지는 그때 사용자와 확인).
+    노란 ROI 박스 오버레이는 기존 컨벤션대로 유지(memory: montage_conventions 참고).
 0. **[진행 중] bootstrap_v2 Stage 1 완료 + 1027장으로 확장한 pseudo_dataset v2 생성 중.**
    - **완료**: `bootstrap_v2.zip`(134장, 기존74+신규60) 만들어서 Colab Stage 1 학습
      완료(small config, 40 epoch) → `twinlitenetplus_small_bootstrap_v2.onnx`
