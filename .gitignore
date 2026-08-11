@@ -43,6 +43,10 @@ outputs/onnx/
 *.pth
 *.pt
 
+# 예외: 최종 배포용 onnx는 추적 (실차 반영 대상, README에서 링크)
+!outputs/models/best.onnx
+!outputs/models/best.onnx.data
+
 # 데이터셋에서 파생된 CSV/JSON (재생성 가능)
 *.csv
 coco_import_rle.json
