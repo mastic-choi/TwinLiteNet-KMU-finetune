@@ -1,4 +1,4 @@
-# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-11 갱신, 5회차)
+# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-11 갱신, 6회차)
 
 이 문서는 세션이 끊겨도 다음 LLM/사람이 바로 이어서 작업할 수 있게 만든 상태 기록이다.
 읽는 순서: 1) 목표 → 2) 지금까지 한 일(시간순) → 3) 알아낸 버그/교훈 → 4) 다음 할 일 → 5) 파일/경로 참조.
@@ -439,8 +439,58 @@ UMK `track_drive` 패키지가 쓰는 원조 TwinLiteNet(da/ll 듀얼헤드)이 
   커밋해두면 원본 대비 diff가 명확해질 것**이라는 개선안은 사용자가 "이따가"로
   보류함 — 나중에 요청 있으면 진행.
 
+### 2.14 40epoch(WSL/ROCm) 학습 완료 + README 개편 + 팀 피드백 (2026-08-11 저녁, 6회차)
+
+- 이 세션에서: Windows 네이티브 ROCm은 RX 9070 XT(gfx1201)용 MIOpen 커널이 사전
+  컴파일 DB에 없어서 런타임 JIT 컴파일 중 `type_traits not found`로 크래시(GitHub에
+  동일 사례 다수, AMD도 "Windows 지원 미성숙"이라 인정) → **WSL2 Ubuntu-22.04로
+  전환**해서 해결(amdgpu-install --usecase=wsl,rocm + repo.radeon.com의 rocm7.2
+  manylinux 휠). medium config 40epoch(1068장, batch_size=8) 학습 완료 — 에폭당
+  안정적으로 ~275초, 총 3시간 4분. 최종 **da mIoU 0.937**(21epoch부터 수렴),
+  **ll IOU 0.567**(28epoch, `best_ll.pth`). batch_size는 32→OOM, 16↔8 속도 차이
+  거의 없어서(모델이 47만 파라미터급으로 워낙 작아 MIOpen fallback 커널의 compute가
+  병목으로 추정) 8 유지.
+- `outputs/models/best.onnx`(+`.onnx.data`)로 export 완료(PyTorch 대비 오차
+  <1e-4, opset 12 요청했으나 torch 2.9.1 dynamo exporter가 18로 자동 상향).
+  README.md를 결과 중심(GIF 3개 + 라벨링 파이프라인 몽타주 + 최종 성능 표)으로
+  전면 개편, letterbox 버그 등 상세 트러블슈팅 서술은 README에서 빼고 이 문서에만
+  남기기로 함(README는 "프로젝트 대문", 시행착오는 PROGRESS.md 전담).
+- 원조 TwinLiteNet vs 우리 모델 실주행 비교 GIF 3개 제작(`dataset/` 2123장 원본에서
+  `scripts/detect_curve_frames_pth.py`/`detect_turn_direction.py`로 곡률+방향
+  자동 검출해서 커브/좌회전 구간 선별): 커브(frame_000800~935, S자),
+  좌회전 단독(frame_000400~480), 직진 대조군(frame_000933~985) —
+  `outputs/montages/{curve,left_turn,straight}_old_vs_new.gif`.
+
+**팀 피드백(2026-08-11 21:35, 윤성·최준수, 카톡 — 원문 요약)**:
+- 기존에 인식 불가능하던 부분에서 큰 진전 확인, 전반적으로 안정성이 늘었다는 인상.
+- **[신규 발견] 차선과 차량이 평행하지 않고 각도가 생기는 순간 da(주행가능영역)가
+  많이 흔들림.** 지금까지 raw 데이터가 정상 주행(차량이 대략 차선과 평행하게
+  진행) 위주라, 각도가 있는 상황 자체가 학습 데이터에 부족했을 가능성이 큼 —
+  지금 GIF들의 커브/좌회전도 "차량은 정면 유지, 차선만 휘는" 경우라 이 문제와는
+  다른 케이스. 최준수 가설: 실차로 **지그재그 주행**하며 raw를 따면 이 각도
+  상황이 자연히 데이터에 포함될 것.
+- 로컬(RX 9070 XT/ROCm) medium 학습 시간 재확인 및 팀 공유: **~4시간, Colab으로는
+  절대 불가능** — 앞으로도 로컬 학습 기본, 가능하면 Colab 시도 안 함.
+- 방향성: "안 되는 부분 위주로" 데이터를 모아서 다음 학습에 반영하는 흐름을
+  계속 유지하기로 함(기존 커브/글레어/콘 처럼, 이제 "비평행 각도"도 그 목록에 추가).
+
 ## 3. 다음 할 일 (미완료, 우선순위 순)
 
+-2. **[최우선, 2026-08-12(내일) 예정 — 팀 계획]** 차선-차량 비평행(각도 있는 상황)에서
+    da가 흔들리는 문제 대응:
+    1. 실차로 **지그재그 주행**하며 raw 프레임 수집 (최준수, 내일 낮)
+    2. 수집한 프레임 라벨링 — 기존 파이프라인 그대로 재사용 가능: da는 지금
+       `best.pth`(또는 `best_ll.pth`) pseudo-label, ll은 YOLOPv2+skeleton
+       정제(`scripts/build_pseudo_label_dataset_v2.py` 계열)
+    3. 기존 `pseudo_dataset_v2`(1068장)에 병합 후 로컬(WSL/ROCm)에서 medium
+       config 재학습 (내일 저녁, 최준수 집 PC — 예상 ~3~4시간)
+    4. 학습 후 **비평행/각도 있는 프레임 위주로 old-vs-new 비교**해서 실제
+       개선됐는지 검증. 이 세션에서 만든 `scripts/scan_old_vs_new_gap.py`
+       (전체 프레임 ROI 커버리지 스캔) 재사용 가능하되, 지금은 곡률(차선이
+       휘는 정도) 기준으로 프레임을 골랐던 걸 **"차선-차량 각도(비평행도)"
+       기준**으로 바꿔서 골라야 함 — 아직 이 각도를 정량화하는 로직은 없음,
+       새로 작성 필요(예: ll 마스크의 전체 기울기 vs 화면 중심축 각도 차이로
+       근사 가능할 듯).
 -1. **[대기, 사용자 요청 2026-08-11]** 9070 XT(로컬 Windows/ROCm) medium 학습 끝나고
     모델 받으면, **그 모델 vs 순정 TwinLiteNet 비교 GIF** 만들어서 README "결과"
     섹션에 추가할 것. 기존 몽타주 스크립트들(`compare_bootstrap_v2_da.py` 등)의
