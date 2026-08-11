@@ -32,8 +32,9 @@ CondLaneNet/
 PETR/
 LaneGAP/
 
-# 생성된 결과물 (몽타주 이미지 등)
-outputs/
+# 생성된 결과물 - 몽타주/스크래치 이미지는 결과물이라 추적함(outputs/montages, outputs/scratch).
+# onnx 가중치만 제외(위 *.onnx 규칙과 중복이지만 명시적으로 한 번 더).
+outputs/onnx/
 
 # 대용량 바이너리 (모델 가중치, 압축 데이터셋)
 *.zip

@@ -97,6 +97,33 @@ scripts/                                        # 데이터 파이프라인/검�
 데이터셋 원본/중간산출물/모델 가중치는 용량 문제로 이 레포에 포함하지 않음
 (`.gitignore` 참고) — 별도 zip/Drive로 관리.
 
+## 결과 (몽타주)
+
+검증 단계마다 만든 비교 몽타주 전체는 [`outputs/montages/`](./outputs/montages)에,
+디버깅용 스크래치 이미지는 [`outputs/scratch/`](./outputs/scratch)에 있음. 그 중
+핵심적인 것들:
+
+**순정 TwinLiteNet vs 파인튜닝(small,470) vs YOLOPv2** — da는 파인튜닝 모델이 셋 중
+제일 좋고 순정도 확실히 이김, ll은 YOLOPv2가 앞섬(그래서 ll pseudo label 소스로 채택).
+
+![3-way 비교](outputs/montages/three_way_compare_montage.png)
+
+**순정 vs small,470(pseudo label 오염 있음) vs bootstrap_v2(2단계 부트스트랩, 편향 없는
+134장으로 학습)** — 커브 구간 da 과다포함 편향이 pseudo label 소스 오염 때문이었단 걸
+확인한 검증. 노란 선 = 실차 BEV 변환이 잘라내는 ROI 경계.
+
+![bootstrap_v2 커브 비교](outputs/montages/bootstrap_v2_vs_old_curve_montage.png)
+
+**사람 GT 74장 대비 da 과다포함(빨강)/과소포함(파랑) 정량 검증** — "커버리지가 높아
+보인다"는 인상만으로 판단하지 않고 항상 이렇게 직접 계산해서 확인.
+
+![da 과다포함 체크](outputs/montages/da_overpaint_check.png)
+
+**최종 pseudo_dataset_v2(1068장) 자동생성 라벨 스팟체크** — da가 트랙 경계에 잘
+붙고 커브도 매끄럽게 따라감.
+
+![pseudo_dataset_v2 스팟체크](outputs/montages/pseudo_dataset_v2_spotcheck.png)
+
 ## 관련 레포
 
 - 베이스 모델: [chequanghuy/TwinLiteNetPlus](https://github.com/chequanghuy/TwinLiteNetPlus)
