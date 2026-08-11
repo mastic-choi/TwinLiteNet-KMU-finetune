@@ -48,15 +48,42 @@ TwinLiteNet, 오른쪽이 우리가 40epoch 파인튜닝한 모델(medium config
 
 ![라벨링 파이프라인](outputs/montages/pipeline_montage.png)
 
-### 최종 성능 (validation set 160장 기준)
+### 파인튜닝 전/후 정량 비교 (validation set 160장, GT 대비 동일 기준 측정)
 
-| | da mIoU | ll IOU |
-|---|---|---|
-| **파인튜닝 후(medium, 40epoch, 1068장)** | **0.937** | **0.567** |
+원조 TwinLiteNet은 우리 트랙 GT로 학습/검증된 적이 없어서 여기엔 없음(대신 위 주행
+비교 GIF가 old vs new 비교 자료) — 이 표는 **같은 베이스 모델(TwinLiteNetPlus
+medium)의 파인튜닝 전/후**를 우리 GT 기준 IoU로 직접 비교한 것.
 
-원조 TwinLiteNet은 애초에 우리 트랙용 GT로 학습/검증된 적이 없어서 같은 기준(우리 GT
-대비 IoU)으로 직접 비교할 수 있는 숫자가 없음 — 대신 위 주행 비교 GIF가 실질적인
-비교 자료. 정량적 old-vs-new IoU 비교는 다음 세션 과제.
+| Model | Drivable Area mIoU | Lane Line Acc | Lane Line IoU |
+|:-----:|:-------------------:|:-------------:|:--------------:|
+| TwinLiteNetPlus (pretrained, BDD100K, 파인튜닝 0회) | 0.815 | 0.669 | 0.132 |
+| **TwinLiteNetPlus (우리 트랙 파인튜닝, medium, 40epoch)** | **0.935 (+0.120)** :arrow_up: | **0.802 (+0.133)** :arrow_up: | **0.552 (+0.420, 4.2×)** :arrow_up: |
+
+특히 ll IoU가 4배 이상 뛴 게 이 프로젝트의 원래 목표(원조 모델이 차선을 거의 못 잡던
+문제)와 정확히 일치하는 지표.
+
+### 모델 크기 (config별 파라미터 수)
+
+TwinLiteNetPlus는 nano/small/medium/large 4단계를 지원 — 우리는 정확도와 속도를
+같이 고려해 **medium**을 최종 채택.
+
+| Config | Params |
+|:------:|:------:|
+| nano | 33,379 |
+| small | 121,552 |
+| **medium (채택)** | **478,876** |
+| large | 1,943,911 |
+
+### 원조 TwinLiteNet vs TwinLiteNetPlus — 크기/속도
+
+| Model | Params | Input | Speed (RX 9070 XT, ROCm, batch=1) |
+|:-----:|:------:|:-----:|:----------------------------------:|
+| TwinLiteNet (원조) | 439,633 | 640×360 | 46.3 fps |
+| **TwinLiteNetPlus (medium, 우리 채택)** | 478,876 | 640×384 | **91.5 fps** |
+
+파라미터 수는 비슷한데(약 9% 많음) 추론 속도는 약 2배 — CAAM 어텐션 구조가 원조보다
+효율적인 것으로 보임(엄밀한 알고리즘 단위 프로파일링은 안 해봄, 같은 GPU/배치에서의
+end-to-end 측정치).
 
 ## 학습된 모델
 
