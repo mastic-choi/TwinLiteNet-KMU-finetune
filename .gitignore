@@ -1,0 +1,54 @@
+# 데이터셋 & 파생 데이터 (용량 크고, 재생성 가능한 것들 — 별도로 zip/Drive로 옮길 것)
+dataset/
+dataset_diet/
+dataset_diet_v2/
+dataset_overlay/
+dataset_balanced/
+raw/
+raw 2/
+bootstrap/
+bootstrap_refined/
+bootstrap_v2/
+pseudo_dataset/
+pseudo_dataset_v2/
+labeling_handoff/
+labeling_request_hard_frames/
+missing_line_frames/
+ensemble_drafts/
+diet_montages/
+_handoff_extracted/
+_cvat_export_extracted/
+archive/
+
+# 외부에서 클론한 레포 (각자 자체 .git 있음 — nested repo 문제 방지)
+YOLOPv2/
+_TwinLiteNetPlus_ref/
+Ultra-Fast-Lane-Detection-v2/
+CLRerNet/
+PINTO_CLRerNet/
+CLRNet/
+GANet/
+CondLaneNet/
+PETR/
+LaneGAP/
+
+# 생성된 결과물 (몽타주 이미지 등)
+outputs/
+
+# 대용량 바이너리 (모델 가중치, 압축 데이터셋)
+*.zip
+*.onnx
+*.onnx.data
+*.pth
+*.pt
+
+# 데이터셋에서 파생된 CSV/JSON (재생성 가능)
+*.csv
+coco_import_rle.json
+
+# 파이썬 가상환경 / 캐시
+.venv_triage/
+.venv_yolo/
+__pycache__/
+*.pyc
+.DS_Store
