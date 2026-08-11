@@ -615,13 +615,18 @@ UMK `track_drive` 패키지가 쓰는 원조 TwinLiteNet(da/ll 듀얼헤드)이 
   안 씀 — CUDA 전용이거나 멀티카메라 전제라 구조적으로 불가하거나 우리 도메인에서
   거의 전멸)는 아직 코드는 남아있음(디스크 차지, 필요 없으면 삭제 가능). 다운로드만
   하고 안 쓴 `clrernet_onnx/`, `ufldv2_onnx/`(합쳐서 1.6GB)는 4회차 후반에 삭제함.
-- **스크립트 위치**: 이번(4회차) 세션에 만든 파이썬 스크립트 18개는 전부 `scripts/`
-  폴더 안에 있음(`build_pseudo_label_dataset.py`, `merge_human_labels.py`,
-  `make_ensemble_sam_drafts.py`, `skeleton_polyline_utils.py` 등). 이전 세션(1~3회차)
-  스크립트(`triage_dataset.py`, `diet_dataset.py`, `export_cvat_bootstrap.py` 등)는
-  최상위에 그대로 있음. `scripts/` 안 파일들은 실행 위치(cwd)가 프로젝트 루트든
-  `scripts/` 안이든 상관없이 항상 프로젝트 루트 기준으로 경로를 잡도록 고쳐져 있음
-  (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))` 패턴).
+- **스크립트 위치 (6회차에 재정리됨)**: "메인에 파일이 너무 많다"는 지적으로 최상위에
+  흩어져 있던 스크립트 15개 + `scripts/` 바로 밑에 평평하게 있던 38개(총 53개)를
+  전부 **기능별 하위 폴더로 이동**함 — `scripts/{data_prep,cvat,pseudo_label,eval,
+  montage,export}/`. 이제 최상위엔 `.py` 파일이 하나도 없음(README.md/PROGRESS.md/
+  .gitignore/노트북 3개만). 프로젝트 루트를 가리키던 `os.path.dirname(...)` 패턴은
+  전부 깊이 변화(1단계 더 깊어짐)에 맞춰 dirname 호출을 하나씩 추가해서 일괄 수정함
+  (예: 기존 `os.path.dirname(os.path.dirname(os.path.abspath(__file__)))` →
+  `os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))`).
+  폴더 간 크로스 임포트(`make_da_from_ll_montage.py`가 `pseudo_label/da_from_ll.py`를
+  쓰는 경우)는 `sys.path.insert`로 명시 처리. **이 문서(PROGRESS.md)의 위 시간순
+  기록(1~5회차)에 나오는 스크립트 경로 언급은 전부 이동 전 기준**이니, 실제 파일을
+  찾을 땐 파일명으로 검색하거나 위 카테고리 분류를 참고할 것.
 - **5회차 세션에 추가한 로컬 스크립트/파일**:
   - `scripts/make_three_way_compare_montage.py` — 구모델(onnx)/신모델(pth)/YOLOPv2
     3-way 비교 몽타주, 재사용 가능(§2.12)

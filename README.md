@@ -123,8 +123,13 @@ PROGRESS.md                                          # 세션별 상세 진행 �
 outputs/
   models/best.onnx(.data)                            #   최종 학습 결과물
   montages/                                           #   비교 GIF/몽타주 전체
-scripts/                                             # 데이터 파이프라인/검증/시각화 스크립트
-*.py (최상위)                                         # 초기 세션 데이터 triage/export 스크립트
+scripts/                                             # 기능별로 분류된 파이프라인 스크립트
+  data_prep/                                          #   원본 프레임 수집·다이어트·triage
+  cvat/                                                #   CVAT import/export, 사람 라벨 병합
+  pseudo_label/                                        #   da/ll 자동 라벨링 파이프라인 + 공용 유틸
+  eval/                                                #   모델 비교·검증·곡률/각도 검출
+  montage/                                             #   비교 몽타주/GIF 생성
+  export/                                              #   ONNX export
 ```
 
 데이터셋 원본/중간산출물은 용량 문제로 이 레포에 포함하지 않음(`.gitignore` 참고) —
