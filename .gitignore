@@ -56,6 +56,10 @@ outputs/onnx/
 !outputs/ensemble_bootstrap_v1/
 !outputs/ensemble_bootstrap_v1/**/*.pth
 
+# 예외: 딥앙상블 v2(§2.23, bootstrap_v2 1016장 기반) - 총 20MB
+!outputs/ensemble_bootstrap_v2/
+!outputs/ensemble_bootstrap_v2/**/*.pth
+
 # 데이터셋에서 파생된 CSV/JSON (재생성 가능)
 *.csv
 coco_import_rle.json
