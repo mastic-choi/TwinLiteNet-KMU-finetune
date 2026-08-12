@@ -1066,8 +1066,72 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
   착수(백그라운드, `~/fine-tune/lap005_pseudo_label.log`).
 - **다음**: 2734장 전부 끝나면 `pseudo_dataset_lap005/`를 `bootstrap_v2`(1016장)와
   병합해서 최종 재학습(§3 -3의 5번, "최종 medium 배포 모델 재학습") 데이터셋 구성.
+- **완료**: 2734장 전부 생성, YOLOPv2 lane 미검출 0/2734. 200장(4×5 균등샘플)
+  스팟체크 몽타주 제작(`outputs/montages/lap005_pseudo_label_spotcheck_200.png`)
+  후 커밋.
+
+### 2.26 사용자 수동 검수(304장 제외) + 최종 재학습 착수 + Windows Update 강제
+    재부팅 2회 복구 (2026-08-13 새벽, 8회차)
+
+- **사용자가 `pseudo_dataset_lap005/images/`를 직접 훑어보며 나쁜 프레임 삭제**
+  (`\\wsl.localhost\Ubuntu-22.04\...\pseudo_dataset_lap005\images` 탐색기로 접근).
+  개별 프레임 확인 중 실제로 나쁜 사례 다수 발견 — 공통 패턴: **YOLOPv2가 벽/커튼
+  하단 경계선이나 가구 윤곽을 차선으로 오검출**(`lap005_frame_000726/000739/
+  000762` 등, 차량이 트랙을 크게 벗어나 옆을 보는 순간들 — 지그재그 데이터라
+  이런 프레임이 나올 수 있음). 반대로 `lap005_frame_002427/002490` 등은 깔끔한
+  정상 사례로 확인됨. **2734 → 2430장으로 정리**(304장 제거) — 이미지 폴더에서만
+  지우면 나머지(da_masks/ll_masks)는 자동으로 매칭 정리하도록 스크립트로 처리
+  (고아 마스크 304개씩 삭제).
+- **병합 데이터셋 Drive 업로드용 zip 생성**: `bootstrap_v2`(1016) +
+  `pseudo_dataset_lap005`(검수후 2430) = **3446장**을 `final_train_merged.zip`
+  (1.5GB, `ZIP_STORED`)으로 묶어서 `Downloads/`에 저장(사용자가 Drive에 직접
+  업로드 예정).
+- **최종 배포 모델 재학습 착수**: `wsl_final_retrain_setup.py`(레포 밖, 기존
+  `wsl_setup_patch_and_data.py`류와 동일 컨벤션)로 train/val 분할(2930/516,
+  VAL_RATIO 0.15 동일) + 증강. **[판단, 사용자 승인 없이 결정]** `N_AUG_PER_IMAGE`를
+  기존 3 → **1로 축소** — 기반 데이터 자체가 이미 3446장으로 예전(908장 train)보다
+  훨씬 커져서 예전만큼 증강이 필요 없다고 판단, 학습시간도 관리 가능한 수준으로
+  유지하기 위함(증강 후 train 2930→5860장). `run_final_retrain.sh`
+  (앙상블v2 때 검증된 "체크포인트 epoch 확인 후 자동 재시도" 견고성 패턴 재사용,
+  `GPU_THROTTLE_MS=65`/`BATCH_SIZE=4` 안전설정 그대로) 착수, `--config medium
+  --max_epochs 40`(사용자와 상의 후 유지 결정 — best.pth/best_ll.pth가 매 epoch
+  갱신 저장되니 많이 돌려도 손해 없다는 논리로 설득함).
+- **1epoch 소요 608초 확인**(2930→5860장/batch4/스로틀65ms 기준) → 40epoch 총
+  예상 ~6.8시간, 사용자에게 보고 후 취침.
+- **[사고] Windows Update가 새벽에 PC를 자동으로 두 번 재시작시킴**(04:17,
+  08:01 KST — `Get-WinEvent` Event 1074/109로 `TrustedInstaller.exe`발 재시작
+  확인, **§2.23의 GPU 크래시(Kernel-Power 41)와는 다른 원인**). **WSL2는 Windows
+  재부팅에서 못 살아남아서**(VM 자체가 꺼짐) 앙상블 학습 때 만든 "체크포인트
+  epoch 확인 후 자동 재시도" 로직(같은 WSL 프로세스 안에서의 재시도만 방어)이
+  이 상황은 못 막음 — 04:17 재부팅 이후 08:04(다음 확인 시점)까지 **약 3시간
+  45분 학습이 그냥 멈춰있었음**(에러도 안 나서 Monitor도 "문제 없음"으로 조용히
+  대기 — harness의 Monitor task 자체도 "stopped, no completion record" 상태가
+  됨, WSL이 꺼지면서 감시 프로세스도 같이 죽은 것으로 추정).
+  - **복구**: `checkpoint.pth.tar`(epoch27, best_da=0.976, best_ll=0.597 보존)
+    확인 후 `run_final_retrain.sh` 수동 재실행 → 정상 재개.
+  - **완화 조치(관리자 권한 없어서 완전 차단은 못 함)**: `wuauserv` 서비스
+    중지/비활성화 시도했으나 **이 세션이 관리자 권한이 아니라 실패**
+    (`Cannot open 'wuauserv' service`). 대신 `HKLM:\SOFTWARE\Microsoft\
+    WindowsUpdate\UX\Settings`의 `ActiveHoursStart/End`를 0~23(하루 종일)로
+    확장하는 건 **관리자 권한 없이도 성공** — Windows Update가 이 시간대엔
+    자동재부팅을 피하도록 유도(단, 강제 업데이트는 그래도 뚫을 수 있어서
+    100% 보장은 아님). 현재 pending reboot 플래그는 없는 상태 확인함(이번
+    업데이트 사이클은 이미 끝난 것으로 보임).
+  - **교훈**: 장시간 무인 GPU 학습을 하는 PC는 **미리 관리자 권한으로 Windows
+    Update 자동재부팅을 꺼두거나(그룹정책 `NoAutoRebootWithLoggedOnUsers` 등)
+    "일시 중지" 기능을 걸어두는 게 근본 대책** — 관리자 권한 없는 세션에서는
+    사후 대응(active hours 확장 정도)밖에 못 함. 다음에 이런 장시간 학습을
+    시작하기 전에 사용자가 미리 이걸 꺼두면 좋을 것.
+- **다음**: 재학습 완료까지 대기(체크포인트 재개 로직 유효, epoch27부터 재개
+  중) → 완료되면 ONNX export + `track_drive/config.py` `DL_INPUT_H` 반영 +
+  커밋/푸시 → 오늘 할 일 종료, 이후 PC 종료(사용자 지시).
 
 ### 데스크톱(원래 FOSCAR RTX 지원 예정이었으나 무산, 실제로는 최준수 개인 PC/RX 9070 XT)에서 할 일 체크리스트
+
+**[사실상 obsolete, 참고용으로만 남김]** 아래 체크리스트는 원래 "Mac이 조율하고
+RTX PC가 연산만 담당"하는 구조를 전제로 작성됐으나, 실제로는 이 PC(Windows,
+RX 9070 XT) 하나에서 학습·검증·릴리즈·최종 재학습까지 전부 진행됐음(§2.23~2.26).
+Mac 왕복이 필요했던 단계는 결과적으로 없었음.
 
 1. **구글 드라이브에서 `bootstrap_v2.zip`(427MB) 받기** — Mac에서 압축까지 완료해서
    드라이브 업로드 안내함(사용자가 직접 업로드 진행 중, 이 문서 작성 시점 기준
