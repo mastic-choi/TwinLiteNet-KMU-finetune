@@ -1,10 +1,8 @@
 <div align="center">
 <h1>TwinLiteNet+ KMU Track Fine-tune 🏎️</h1>
-<p>국민대(KMU) 자율주행 소형 RC카 프로젝트 <a href="https://github.com/mastic-choi/UMK">UMK/track_drive</a>의
-차선·주행가능영역 인식 모델을, 우리 트랙 도메인에 맞게 파인튜닝한다.
-<a href="https://auto-contest.kookmin.ac.kr/">제9회 자율주행 경진대회</a> 참여작으로,
-자이트론(Xytron) <b>자이카(Xycar) Y모델</b>로 미래관(신관) 4층 자율주행스튜디오
-트랙을 주행한다.</p>
+<p><a href="https://auto-contest.kookmin.ac.kr/">제9회 자율주행 경진대회</a> 참여작 —
+<a href="https://github.com/mastic-choi/UMK">UMK/track_drive</a>의 차선·주행가능영역
+인식 모델을, 미래관(신관) 4층 자율주행스튜디오 트랙에 맞춰 파인튜닝한다.</p>
 </div>
 
 ## Background
