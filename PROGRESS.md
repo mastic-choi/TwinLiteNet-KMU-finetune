@@ -1,4 +1,4 @@
-# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-12 갱신, 7회차)
+# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-12 갱신, 8회차)
 
 이 문서는 세션이 끊겨도 다음 LLM/사람이 바로 이어서 작업할 수 있게 만든 상태 기록이다.
 읽는 순서: 1) 목표 → 2) 지금까지 한 일(시간순) → 3) 알아낸 버그/교훈 → 4) 다음 할 일 → 5) 파일/경로 참조.
@@ -920,6 +920,44 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
 **지금 Mac에서 준비해둔 것**: `lap_005_raw_2734.zip`(원본 이미지만, pseudo-label
 없음 — `new_raw_frames/`의 `lap005_` 접두어 2734장을 그대로 압축) — 구글 드라이브에
 올려서 위 2번 단계 때 RTX PC에서 받아 쓸 것.
+
+### 2.23 앙상블 v2 학습 착수 (RTX가 아니라 실제로는 RX 9070 XT, WSL/ROCm) (2026-08-12, 8회차)
+
+- **[정정]** §2.22에서 "집(RTX)"으로 적었던 그 PC(`C:\fine-tune`)가 실제로는 **§2.14와
+  동일한 AMD RX 9070 XT**였음(`wmic`/`Get-CimInstance Win32_VideoController`로 실측
+  확인) — NVIDIA/CUDA가 아니라 ROCm임. `finetune_ensemble_v2_local_rtx.ipynb`(CUDA용)를
+  그대로 못 쓰고 ROCm 버전이 필요했음.
+- **[중요] 네이티브 Windows ROCm 노트북(`finetune_twinlitenetplus_local_windows_rocm.ipynb`)은
+  실제로 검증된 경로가 아니었다는 게 재확인됨** — §2.14에서 이미 이 방식이 gfx1201 MIOpen
+  JIT 크래시로 실패해서 WSL2로 전환했었는데, 그 노트북 파일 자체는 전환 전 버전 그대로
+  레포에 남아있었음(문서화 누락). 실제 40epoch medium 학습(§2.14)은 WSL2 Ubuntu-22.04
+  안의 `~/fine-tune/.venv`(torch 2.9.1+rocm7.2.0, RX 9070 XT 인식 확인됨)에서 순수
+  python 스크립트로 진행된 것이었음.
+- **`finetune_ensemble_v2_local_rocm_wsl.ipynb`** 신규 작성 — `finetune_ensemble_v2_local_rtx.ipynb`와
+  동일 로직(§2.17 device-agnostic 패치 그대로 재사용, CUDA/ROCm 어디서든 무수정 동작)이되
+  0단계를 "이미 설치된 WSL ROCm venv 확인"으로 교체, WSL2 안의 Jupyter에서 열어서 쓰는
+  걸 전제로 문서화. 네이티브 Windows ROCm 노트북은 참고용으로만 남겨둠(실제로 안 씀
+  명시).
+- **실행은 노트북이 아니라 동일 코드를 WSL bash 스크립트(`~/fine-tune/run_ensemble_v2.sh`,
+  nohup 백그라운드)로 진행** — 기존 `wsl_setup_patch_and_data.py`/`finetune_wsl_copy.py`
+  패턴을 그대로 재사용(§2.14). `bootstrap_v2.zip`(428MB, 사용자가 Drive에서 받아 Windows
+  `Downloads/`에 이미 준비해둠)을 WSL로 복사 → 압축 해제(1016장 → train 864/val 152,
+  증강 없음 — Mac ensemble v1 라운드와 동일 컨벤션) → 코드 패치(멱등, §2.17 로직과 동일) →
+  `finetune.py` 작성(`--seed` 지원, device-agnostic).
+- **1epoch 사니티 테스트**(seed 0, `/tmp`에 임시 저장 후 삭제) 통과 — da mIoU 0.930,
+  ll IOU 0.421(medium.pth pretrained에서 시작이라 1epoch만에도 이미 높음), epoch당
+  ~99초(no-aug 864장 train 기준, MIOpen 워크스페이스 워닝은 무해한 것 확인). **5.5시간
+  예상**(99초 × 40epoch × 5seed) — §2.22의 Mac 추정(4시간, aug 없는 조건 동일)보다
+  조금 더 걸리지만 같은 자릿수.
+- **본 학습 착수**: seed 0~4 순차로 `~/fine-tune/run_ensemble_v2.sh` 백그라운드 실행
+  중(2026-08-12 17:15 KST 시작). 로그: `~/fine-tune/ensemble_v2_train.log`. 완료 후
+  산출물: `~/fine-tune/finetune_out_ensemble_v2_seed{0..4}/best.pth`(+`best_ll.pth`).
+  **다음 세션이 할 일**: 학습 다 끝났으면 이 10개 파일을 Mac의 `outputs/
+  ensemble_bootstrap_v2/seed{0..4}/`로 옮기고(§2.22 체크리스트 6~7번 그대로), 완료되면
+  §2.23 파이프라인 확정 순서의 2단계(lap_005 pseudo-label 생성, 이것도 이 PC에서 GPU로
+  돌릴 것 — 현재 `build_pseudo_label_dataset_lap005.py`는 CPU 전용이라 `.to(device)`
+  추가하는 개선이 필요, `outputs/ensemble_bootstrap_v1` 대신 `_v2` 참조하도록도 수정
+  필요)로 진행.
 
 ### 데스크톱(RTX, 집)에서 할 일 체크리스트
 
