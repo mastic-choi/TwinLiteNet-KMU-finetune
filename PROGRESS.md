@@ -959,6 +959,32 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
   추가하는 개선이 필요, `outputs/ensemble_bootstrap_v1` 대신 `_v2` 참조하도록도 수정
   필요)로 진행.
 
+- **[사고, 2026-08-12 17:37 KST] PC가 학습 도중 예기치 않게 강제 종료됨**(Windows
+  이벤트 로그 ID 41 "Kernel-Power" — 비정상 종료 후 재부팅, seed0 epoch14 도중 발생
+  추정). 사용자가 GPU 사용량을 ~85%로 제한해달라고 요청. **조사 결과: WSL2는
+  amdgpu 커널 드라이버에 직접 접근 못 해서(`rocm-smi`가 WSL 안에서 "Driver not
+  initialized" 에러) 실제 하드웨어 전력 제한(정확한 %)을 소프트웨어로 걸 방법을
+  못 찾음** — 이 기능은 AMD Software: Adrenalin Edition의 GUI(Performance > Tuning
+  > Power Limit 슬라이더)에만 있고, 이 세션에선 GUI를 조작할 수 없음. **차선책으로
+  적용한 완화 조치**(정확한 85% 보장은 아님, 참고할 것):
+  - `BATCH_SIZE` 8 → 4 (스텝당 연산 burst 감소)
+  - `utils.py`의 `train()` 루프에 배치마다 `GPU_THROTTLE_MS`(환경변수, 현재 200ms)
+    만큼 sleep 추가 → 실측 처리 속도 1.8it/s → 1.44it/s로 감소(duty cycle 축소).
+  - **한계**: 이건 평균 부하만 줄이지, 순간 전력 스파이크(진짜 원인일 수 있는)는
+    못 막음 — 더 확실한 보장을 원하면 Adrenalin에서 Power Limit을 직접 -15%
+    정도로 낮추는 걸 권장(사용자 GUI 조작 필요).
+  - **복구**: `checkpoint.pth.tar` 덕분에(§2.12에서 만든 매 에폭 저장 로직) seed0을
+    epoch15부터 재개 가능했음 — 단 **재개 시도 중 새 버그 발견**: PyTorch 2.6+부터
+    `torch.load` 기본값이 `weights_only=True`로 바뀌어서 체크포인트(옵티마이저
+    상태 등 포함) 언피클링이 실패(`UnpicklingError`) → 스크립트가 이 실패를
+    감지 못 하고 seed0을 조용히 건너뛰고 seed1로 넘어가는 사고 직전까지 감(로그로
+    발견해서 즉시 중단). **수정**: `finetune.py`의 `torch.load(...)` 두 곳(pretrained
+    weight, resume checkpoint) 모두 `weights_only=False` 명시 추가. WSL 저장소와
+    `C:\fine-tune\wsl_finetune_ensemble.py`(Windows 쪽 레퍼런스 사본) 둘 다 수정함.
+  - **재시작**: seed0을 epoch15(best_da_miou=0.970, best_ll_iou=0.574 보존 확인)부터
+    재개, seed1~4는 처음부터(스로틀+batch4 적용) 진행 중. 예상 완료 시간 더
+    길어짐(~7~8시간대로 재추정).
+
 ### 데스크톱(RTX, 집)에서 할 일 체크리스트
 
 1. **구글 드라이브에서 `bootstrap_v2.zip`(427MB) 받기** — Mac에서 압축까지 완료해서
