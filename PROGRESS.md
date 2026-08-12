@@ -1047,6 +1047,25 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
     가늘고 끊긴 선 구간).
 - **다음**: GitHub 릴리즈(`1.1.0`, 사용자 지정) + README 방법론 요약 추가(§3 -3의
   3번), 이후 lap_005 pseudo-label 생성 단계로 진행.
+- GitHub 릴리즈([v1.1.0](https://github.com/mastic-choi/TwinLiteNet-KMU-finetune/releases/tag/v1.1.0))
+  + README "라벨링 품질 개선: 딥앙상블" 섹션 완료(커밋 `88fcb42`).
+
+### 2.25 lap_005(2734장) pseudo-label 생성 착수 (2026-08-12 22:4x KST, 8회차)
+
+- `build_pseudo_label_dataset_lap005.py`를 이 PC(WSL)에서 GPU로 돌리도록 로컬
+  스크립트(`wsl_build_pseudo_label_lap005.py`, 레포 밖 `C:\fine-tune`에 있음 —
+  기존 `wsl_setup_patch_and_data.py`류와 같은 컨벤션, git 추적 안 함)로 이식:
+  `ENSEMBLE_DIR`을 `ensemble_bootstrap_v2`로, `DEPLOYED_ONNX`는 원본 그대로
+  유지(§2.23 "포함 유지" 결정), 모든 torch 추론에 `.to(device)` 추가(원본은
+  CPU 전용).
+- **YOLOPv2를 이 PC에 새로 설치**: `~/fine-tune/YOLOPv2`에 shallow clone +
+  공식 릴리즈에서 `yolopv2.pt`(156MB) 직접 다운로드(Mac에서 쓰던 것과 동일
+  가중치, 재사용 X — 이 PC엔 없었어서 새로 받음).
+- 5장 스모크테스트 통과(YOLOPv2 lane 미검출 0/5) + 육안 확인(da가 트랙 경계에
+  잘 붙고 ll이 점선을 잘 따라감, `lap005_frame_000005` 샘플로 확인) 후 본 실행
+  착수(백그라운드, `~/fine-tune/lap005_pseudo_label.log`).
+- **다음**: 2734장 전부 끝나면 `pseudo_dataset_lap005/`를 `bootstrap_v2`(1016장)와
+  병합해서 최종 재학습(§3 -3의 5번, "최종 medium 배포 모델 재학습") 데이터셋 구성.
 
 ### 데스크톱(원래 FOSCAR RTX 지원 예정이었으나 무산, 실제로는 최준수 개인 PC/RX 9070 XT)에서 할 일 체크리스트
 
