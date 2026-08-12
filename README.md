@@ -39,8 +39,7 @@ TwinLiteNet, 오른쪽이 우리가 40epoch 파인튜닝한 모델(medium config
 ![커브 구간 비교](outputs/montages/curve_old_vs_new.gif)
 
 **커브 구간 2(frame_000400~000480)** — 첫 번째와 다른 지점의 커브 구간. 회전
-바깥쪽으로 과다포함되는 문제가 가장 뚜렷하게 보임(이전에 "좌회전 단독 구간"으로
-잘못 표기했던 걸 정정 — 좌회전만 있는 구간이 아니라 이것도 커브 구간의 일부).
+바깥쪽으로 과다포함되는 문제가 가장 뚜렷하게 보임.
 
 ![커브 구간 2 비교](outputs/montages/curve2_old_vs_new.gif)
 
