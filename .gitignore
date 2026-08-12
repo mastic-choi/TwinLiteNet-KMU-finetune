@@ -16,6 +16,9 @@ labeling_request_hard_frames/
 missing_line_frames/
 ensemble_drafts/
 diet_montages/
+new_raw_frames/
+trust_review_output/
+.gradio/
 _handoff_extracted/
 _cvat_export_extracted/
 archive/
@@ -57,3 +60,4 @@ coco_import_rle.json
 __pycache__/
 *.pyc
 .DS_Store
+.ipynb_checkpoints/
