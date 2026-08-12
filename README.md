@@ -2,6 +2,9 @@
 <h1>TwinLiteNet+ KMU Track Fine-tune 🏎️</h1>
 <p>국민대(KMU) 자율주행 소형 RC카 프로젝트 <a href="https://github.com/mastic-choi/UMK">UMK/track_drive</a>의
 차선·주행가능영역 인식 모델을, 우리 트랙 도메인에 맞게 파인튜닝한다.</p>
+<p><a href="https://auto-contest.kookmin.ac.kr/">제9회 국민대학교 자율주행 경진대회</a> 참여작 —
+자이트론(Xytron) <b>자이카(Xycar) Y모델</b>로 국민대학교 미래관(신관) 4층
+자율주행스튜디오 트랙을 주행한다.</p>
 </div>
 
 ## Background
@@ -17,6 +20,13 @@
 후속작인 [TwinLiteNetPlus](https://github.com/chequanghuy/TwinLiteNetPlus)(CAAM 어텐션
 모듈 추가, nano/small/medium/large 4단계 크기 지원)를 썼다.
 
+### 차량 사양
+
+자이카 Y모델 기본 사양: AMD Ryzen(64bit, 8-core/16thread) + AMD Radeon RX Vega 8,
+Traxxas 1:10 스케일 섀시, 170° 어안렌즈 640×480 카메라. 대회 후반부에
+**reComputer Super J4012**(NVIDIA Jetson Orin NX 16GB, JetPack 6 / Ubuntu 22.04)가
+추가로 제공되어 **본선 경기는 이 PC로 진행**함.
+
 ## Results
 
 ### 실제 주행 비교 (원조 TwinLiteNet vs 우리 파인튜닝 모델)
@@ -30,10 +40,11 @@ TwinLiteNet, 오른쪽이 우리가 40epoch 파인튜닝한 모델(medium config
 
 ![커브 구간 비교](outputs/montages/curve_old_vs_new.gif)
 
-**좌회전 단독 구간(frame_000400~000480)** — 회전 바깥쪽으로 과다포함되는 문제가 가장
-뚜렷하게 보이는 구간.
+**커브 구간 2(frame_000400~000480)** — 첫 번째와 다른 지점의 커브 구간. 회전
+바깥쪽으로 과다포함되는 문제가 가장 뚜렷하게 보임(이전에 "좌회전 단독 구간"으로
+잘못 표기했던 걸 정정 — 좌회전만 있는 구간이 아니라 이것도 커브 구간의 일부).
 
-![좌회전 구간 비교](outputs/montages/left_turn_old_vs_new.gif)
+![커브 구간 2 비교](outputs/montages/curve2_old_vs_new.gif)
 
 **직진 구간(frame_000933~000985, 대조군)** — 직진에서는 원조 모델도 원래 크게 나쁘지
 않다는 걸 보여주는 대조군. 문제는 특히 커브에서 두드러짐.
@@ -111,7 +122,9 @@ end-to-end 측정치).
   나란히 비교 — "커버리지가 높아 보인다" 같은 인상만으로 판단하지 않고 사람 GT 대비
   IoU/과다포함/과소포함을 직접 계산
 - **학습 환경**: Google Colab(무료 GPU) → 로컬 Windows(AMD RX 9070 XT, ROCm)로 이전
-  (medium config가 Colab에서 너무 오래 걸려서)
+  (medium config가 Colab에서 너무 오래 걸려서). 원래는 국민대 소프트웨어융합대학
+  **FOSCAR** 동아리의 RTX 컴퓨터를 지원받아 쓸 계획이었으나 무산되어, 팀원
+  최준수의 개인 PC(RX 9070 XT)로 학습을 진행함
 
 ## 레포 구성
 
@@ -141,3 +154,8 @@ scripts/                                             # 기능별로 분류된 �
 - 원조 모델: [chequanghuy/TwinLiteNet](https://github.com/chequanghuy/TwinLiteNet)
 - ll pseudo label 소스: [CAIC-AD/YOLOPv2](https://github.com/CAIC-AD/YOLOPv2)
 - 실차 배포 대상: [mastic-choi/UMK](https://github.com/mastic-choi/UMK) (`track_drive` 패키지)
+
+## Special Thanks
+
+이 프로젝트의 딥앙상블(deep ensemble) 라벨링 아이디어를 제안해주신 국민대학교
+**이현기** 교수님께 감사드립니다. ([hyungi-lee.github.io](https://hyungi-lee.github.io/))
