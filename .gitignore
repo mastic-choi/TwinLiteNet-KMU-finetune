@@ -50,6 +50,12 @@ outputs/onnx/
 !outputs/models/best.onnx
 !outputs/models/best.onnx.data
 
+# 예외: 딥앙상블 부트스트랩 5개(§2.20) - 총 19MB로 작아서 직접 커밋
+# (da_trust_review.ipynb가 바로 돌아가려면 필요, sam2.1_b.pt는 154MB라 GitHub 100MB
+# 제한에 걸려서 릴리즈 에셋으로 별도 배포 - 노트북 셀에서 자동 다운로드)
+!outputs/ensemble_bootstrap_v1/
+!outputs/ensemble_bootstrap_v1/**/*.pth
+
 # 데이터셋에서 파생된 CSV/JSON (재생성 가능)
 *.csv
 coco_import_rle.json

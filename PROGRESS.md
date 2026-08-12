@@ -813,6 +813,17 @@ SAM 클릭 보정하는 흐름까지 확장함.
     브라우저 탭을 닫는 즉시 찜을 반납하는 건 구현 안 함(대신 10분 타임아웃이
     안전망 역할) — 필요하면 나중에 `gr.Request`의 `session_hash`로 세션↔파일
     매핑을 별도로 관리해서 즉시 반납도 가능할 것.
+- **다른 사람이 레포 clone만 하고 바로 돌릴 수 있게 정리**: 앙상블 5개 모델
+  (`outputs/ensemble_bootstrap_v1/`, 총 19MB)은 작아서 `.gitignore` 예외 처리
+  후 **레포에 직접 커밋**. `sam2.1_b.pt`(154MB)는 GitHub 100MB 파일 제한에
+  걸려서 커밋 불가 — 별도 릴리즈(`sam2-checkpoint` 태그)의 에셋으로 올림
+  (https://github.com/mastic-choi/TwinLiteNet-KMU-finetune/releases/tag/sam2-checkpoint).
+  노트북 맨 앞에 **"-1. 최초 1회 설정" 셀**을 추가해서, clone 직후 없는 것만
+  자동으로 채움: pip 패키지 설치, `_TwinLiteNetPlus_ref` 없으면 원본 저장소
+  clone, `sam2.1_b.pt` 없으면 `gh release download`로 자동 다운로드(private
+  repo라 `gh auth login` 사전 필요, 실패하면 수동 다운로드 안내 출력). 실제로
+  `gh release download` 명령이 정상 동작(다운로드된 파일 크기 원본과 정확히
+  일치)하는 것까지 확인함.
 
 ## 3. 다음 할 일 (미완료, 우선순위 순)
 
