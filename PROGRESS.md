@@ -826,33 +826,105 @@ SAM 클릭 보정하는 흐름까지 확장함.
   3단계(SAM2 로드) 셀에서 처음 실행 시 자동 다운로드되게 둠(설정 셀에선
   존재 여부만 확인).
 
+### 2.22 925장 신뢰 리뷰 완료(860장 확보) → bootstrap_v2 1016장으로 확장 →
+    앙상블 v2는 RTX(집)에서 학습하기로 전환 + lap_005(신규 raw) 정리 (2026-08-12, 7회차)
+
+- **`da_trust_review.ipynb`로 925장(자동생성 pseudo label) 실사용 리뷰 완료** —
+  결과 797신뢰 + 63 SAM보정 = **860장 채택**, 65장 버림(`trust_review_output/
+  trust_results.csv`). SAM 보정 기능(§2.21의 두 버그 수정 후)이 실제로 문제
+  없이 쓰인 것까지 확인됨.
+- **`scripts/cvat/merge_trust_review_batch.py`** 작성 — `trust_review_output/
+  trusted/`(860장, da는 신뢰/보정 완료)를 `bootstrap_v2`에 병합. da/이미지는
+  그대로 복사, ll은 §2.12 `build_bootstrap_v2.py`의 "신규 60장" 처리와 동일한
+  관례로 YOLOPv2+skeleton 자동 생성(이 리뷰 도구는 da만 다뤄서 ll은 검증 안 됨).
+  **결과: `bootstrap_v2` 156장 → 1016장으로 확장**(사람검증 da 전부 + ll은
+  기존 74+60장만 실제 브러시, 나머지 860장은 YOLOPv2 자동 — 이 구성은 §2.12
+  때와 동일한 패턴).
+- **[사용자 판단, 채택]** 이 확장된 1016장으로 앙상블을 다시 학습("round 2")
+  하는 게 맞다고 사용자가 먼저 제안 → 채택. 근거: §2.20에서 확인된 5-앙상블의
+  약점("156장은 장면 다양성 부족해서 일부 프레임 오히려 악화")을 1016장(6.5배)
+  으로 직접 해결하는 방향.
+- **맥북에서 1epoch 타이밍 테스트**: 1016장(train 864) 기준 1epoch=74초 →
+  40epoch×5명 ≈ 4시간 예상. 처음엔 로컬(맥북 M4)에서 백그라운드로 돌리기
+  시작했으나(`/tmp/ensemble_work_v2/`), **사용자가 "집(RTX)에서 돌릴게"로
+  전환** — 로컬 학습 프로세스 kill, 모니터 정리하고 RTX용 노트북 준비로 전환.
+- **`finetune_ensemble_v2_local_rtx.ipynb` 작성** — §2.14의 ROCm 노트북과
+  동일 구조/패치(loss.py/utils.py/BDD100K.py, §2.17에서 만든 device-agnostic
+  버전이라 CUDA에서도 코드 수정 없이 그대로 동작)이되, ROCm SDK 설치 대신
+  **표준 CUDA PyTorch**(`--index-url .../cu121`, 실제 CUDA 버전에 맞게 조정
+  필요) 설치, 데이터 소스는 `pseudo_dataset_v2`가 아니라 **`bootstrap_v2`
+  (1016장)**, 학습은 **seed 0~4 앙상블 5개 루프**로 다름. `bootstrap_v2.zip`
+  (427MB)도 만들어서 레포 루트에 준비해둠 — 홈 PC로 옮겨갈 파일.
+  **완료 후**: RTX PC의 `best.pth`×5(+`best_ll.pth`×5)를 Mac의 `outputs/
+  ensemble_bootstrap_v2/seed{0..4}/`로 가져오면, 기존 평가 스크립트들의
+  `ENSEMBLE_DIR`만 `_v1`→`_v2`로 바꿔서 바로 재검증/비교 가능.
+- **신규 raw 데이터(lap_005, 2903장) 정리**: 사용자가 실차로 새로 수집한
+  원본을 다이어트 없이 그대로 두 단계로 필터링:
+  1. **정지 프레임 제거**(`~/Downloads/lap_005/` 직접 처리, 원본 3223장) — 연속
+     프레임 dHash 해밍거리(threshold≤2, 연속 3장 이상)로 "정지 상태" 판단, 육안
+     확인(완전히 동일한 장면 확인됨) 후 320장(9.9%)을 `lap_005_removed_
+     stationary/`로 이동(완전삭제 아님, `manifest.csv` 동봉). **3223 → 2903장**.
+  2. **차선 미검출 프레임 제거**(`scripts/data_prep/filter_no_lane_yolopv2.py`,
+     신규 작성) — YOLOPv2로 ll 검출해서 `skeleton_polyline_utils.mask_to_
+     polylines()`가 0개 반환하면 "차선 없음"으로 판단, `lap_005_no_lane/`으로
+     이동. 169장(5.8%) 제거 → **최종 lap_005에 2734장 남음**.
+  3. **6-앙상블 da 예측 미리보기**: `scripts/eval/preview_ensemble_on_new_data.py`
+     (신규, GT 없는 새 데이터용 — TP/FP/FN 대신 예측 da만 초록 오버레이) 작성,
+     2903장 중 24장 균등 샘플링해서 `outputs/montages/ensemble_preview_lap_005.png`
+     생성. 육안 확인 결과 커브/콘 프레임 포함 대체로 안정적이고, §2.19에서 문제였던
+     화면 하단 고정물체 오검출도 육안상 줄어든 것으로 보임(GT 없어서 정량 확인은
+     아님).
+  4. **[중요] 파일명 충돌 발견/수정**: lap_005가 기존 데이터셋과 동일한
+     `frame_NNNNNN.png` 명명 규칙을 써서, 기존 925장 배치의 `trust_results.csv`
+     와 **799개 파일명이 겹침** — 그대로 `new_raw_frames/`에 넣으면
+     `da_trust_review.ipynb`가 "이미 처리됨"으로 착각하고 새 lap_005 프레임을
+     건너뛸 뻔했음. **`lap005_` 접두어**를 붙여서 겹침 없이 `new_raw_frames/`에
+     채워넣음(2734장) — **앞으로 다른 lap도 이 접두어 컨벤션(`lapNNN_`) 유지할
+     것**, 그래야 매번 겹침 걱정 없이 새 배치를 추가할 수 있음.
+- **트러블슈팅 2건**(모두 `da_trust_review.ipynb` 실사용 중 발견/수정, git
+  커밋 완료):
+  1. 키보드 1/2 단축키 미동작 — `gr.HTML`의 `<script>`는 innerHTML이라 실행
+     안 됨(`launch(js=...)`로 교체) + Jupyter inline iframe/커맨드모드 충돌
+     (`inline=False`) + shadow DOM 미탐색(재귀 탐색 헬퍼 추가).
+  2. SAM 보정에서 점 추가 후 재생성해도 마스크 그대로인 버그 — `ultralytics.SAM`에
+     점을 평평한 리스트로 주면 점마다 독립 오브젝트로 취급함(포함/제외 무시).
+     `(1,N,2)` 형태로 감싸서 한 오브젝트 결합 프롬프트로 수정.
+  3. 공개 링크 동시접속 시 전원이 같은 화면 보던 문제 — `gr.State()` 세션 분리 +
+     `claimed{}`+`threading.Lock` 기반 찜 방식으로 해결(10분 타임아웃 안전망).
+- **배포 정리**: 앙상블(19MB)은 `.gitignore` 예외 처리해서 레포에 직접 커밋,
+  `sam2.1_b.pt`(154MB)는 처음 릴리즈 에셋으로 올렸다가 `ultralytics.SAM`이
+  자체 자동다운로드하는 걸 확인하고 **릴리즈 철회**(불필요한 배포였음). 노트북
+  맨 앞 "최초 1회 설정" 셀로 다른 팀원이 clone만 하면 바로 돌아가게 정리함.
+
 ## 3. 다음 할 일 (미완료, 우선순위 순)
 
--3. **[결정 완료, 실행 대기 — §2.17~§2.20]** 딥앙상블 부트스트랩 5개(맥북 M4/MPS,
-    medium×5, seed 0~4) 학습 완료 + 검증까지 끝났고, **da pseudo label 재생성 방식은
-    "6-앙상블(신규 5개+기존 배포모델 medium_v2, 소프트보팅)"로 확정**(§2.20). 모델
-    파일은 `outputs/ensemble_bootstrap_v1/seed{0..4}/best.pth`(레포 안, 영구 저장,
-    git엔 안 올라감)에 있음. **다음 LLM/세션이 할 일**:
-    1. **[다음 액션]** `outputs/ensemble_bootstrap_v1/seed{0..4}/best.pth` 5개 +
-       `outputs/models/best.onnx`(기존 배포모델) 총 6개로 `pseudo_dataset_v2`의
-       자동생성 925장 전체에 da 소프트보팅 추론 → da_masks 재생성. 참고 구현:
-       `scripts/eval/check_ensemble_vs_human_gt.py`/`full_grid_ensemble6_da.py`의
-       추론 로직(6개 모델 확률 평균 후 0.5 임계값) 그대로 재사용 가능, 대상만
-       `bootstrap_v2`(156, GT 있음) 대신 `pseudo_dataset_v2`의 자동생성분(925,
-       GT 없음)으로 바꾸면 됨.
-    2. 재생성 후 `pseudo_dataset_v2`의 da_masks를 이 새 라벨로 교체(사람검증
-       156장은 그대로 유지, 자동생성 925장만 교체) → 최종 배포 모델(medium)
-       재학습.
-    3. **[알려진 한계, §2.20에서 발견]** 이 6-앙상블도 **글레어(역광) 프레임**에는
-       여전히 약함(`frame_001950`대 등, IoU 0.6대) — 이 프로젝트 시작 동기와 같은
-       계열의 미해결 문제. 156장 사람 라벨 안에 역광 프레임이 부족한 게 원인일 수
-       있음 — 재학습 전에 `triage_result.csv`의 `glare_suspect`로 bootstrap_v2에
-       역광 프레임이 몇 장이나 있는지 세보고, 부족하면 추가 라벨링 검토할 것.
-    4. 결과 괜찮으면 **RTX 컴퓨터로 옮겨서** 다음 단계(925장 재라벨링 규모의 추론,
-       또는 최종 배포 모델 재학습) 진행 — 코드는 device-agnostic이라 그대로 재사용
-       가능(§2.17 참고).
-    5. 위 -2번(지그재그 데이터)과의 연결/순서는 아직 미정 — 사용자가 "각각 따로
-       진행, 나중에 정리"라고만 해둔 상태(§2.17).
+-3. **[진행 중 — §2.20~§2.22]** da pseudo label 개선 파이프라인의 다음 단계는
+    **앙상블 v2 학습이 RTX(집) PC에서 끝나는 것 대기** 중. **다음 LLM/세션이
+    할 일**:
+    1. **[최우선 액션]** RTX PC에서 `finetune_ensemble_v2_local_rtx.ipynb`가
+       다 돌았으면, 산출물(`best.pth`×5 + `best_ll.pth`×5)을 Mac의 `outputs/
+       ensemble_bootstrap_v2/seed{0..4}/`로 가져오기(아직 안 됐으면 진행상황
+       확인부터).
+    2. `scripts/eval/check_ensemble_vs_human_gt.py` 등의 `ENSEMBLE_DIR`을
+       `_v1`→`_v2`로 바꿔서 **1016장 기준 앙상블이 156장 기준보다 실제로
+       나은지** 재검증(§2.20에서 5-앙상블 156장 버전이 특정 프레임에서 기존
+       단일모델보다 나빴던 문제, `frame_001766`/`frame_001791`류가 v2에서
+       해소됐는지 특히 확인).
+    3. **[사용자 요청, 아직 안 함]** 앙상블 v2 완료되면 **GitHub 릴리즈로 올리고
+       몽타주도 만들 것**(§2.20의 v1.0.0 릴리즈처럼 — 태그명은 예:
+       `ensemble-v2` 정도로, 릴리즈 노트에 156→1016장 확장 배경/성능 비교 포함).
+    4. 검증되면 이 v2 앙상블로 `pseudo_dataset_v2`의 남은 자동생성분(925장 중
+       860장은 이미 신뢰검증됐고 60장 미검토였던 원래 §2.10 구성과 다름 —
+       **1081장 - 1016(새 bootstrap_v2) = 65장**만 아직 순수 자동생성 상태로
+       남음, 이 나머지도 6-앙상블v2로 재생성할지 검토) 재라벨링 → 최종 배포
+       모델 재학습.
+    5. **`new_raw_frames/`에 lap_005(2734장, `lap005_` 접두어) 이미 준비돼
+       있음** — 사용자가 `da_trust_review.ipynb`로 직접 리뷰 예정(§2.22 4번
+       참고, 진행 상황은 사용자가 직접 관리 중).
+    6. **[알려진 한계, §2.20]** 글레어(역광) 프레임 취약점은 여전히 미해결 —
+       `triage_result.csv`의 `glare_suspect`로 bootstrap_v2(1016장)에 역광
+       프레임이 몇 장이나 있는지 세보고 부족하면 추가 검토할 것.
+    7. 위 -2번(지그재그 데이터)과의 연결/순서는 아직 미정.
 
 -2. **[최우선, 2026-08-12(내일) 예정 — 팀 계획]** 차선-차량 비평행(각도 있는 상황)에서
     da가 흔들리는 문제 대응:
