@@ -896,6 +896,30 @@ SAM 클릭 보정하는 흐름까지 확장함.
   자체 자동다운로드하는 걸 확인하고 **릴리즈 철회**(불필요한 배포였음). 노트북
   맨 앞 "최초 1회 설정" 셀로 다른 팀원이 clone만 하면 바로 돌아가게 정리함.
 
+### 데스크톱(RTX, 집)에서 할 일 체크리스트
+
+1. **구글 드라이브에서 `bootstrap_v2.zip`(427MB) 받기** — Mac에서 압축까지 완료해서
+   드라이브 업로드 안내함(사용자가 직접 업로드 진행 중, 이 문서 작성 시점 기준
+   업로드 완료 여부는 미확인 — 다음 세션에서 확인할 것).
+2. **`finetune_ensemble_v2_local_rtx.ipynb` 열기**(Mac `fine-tune` 레포에 커밋
+   돼 있음, `git pull`로 받으면 됨) — Jupyter나 VS Code에서 실행.
+3. 노트북 맨 위 `BASE_DIR`을 실제 로컬 경로로 수정, `bootstrap_v2.zip`을 그
+   경로 바로 밑에 복사해둘 것.
+4. `nvidia-smi`로 CUDA 버전 확인 후, 0단계 CUDA PyTorch 설치 셀의
+   `--index-url https://download.pytorch.org/whl/cu121` 부분을 실제 버전에
+   맞게 조정(예: CUDA 12.4면 `cu124`).
+5. 셀 순서대로 실행 — 1(레포 clone) → 2(의존성 설치) → 3(pretrained 자동
+   다운로드) → 4(bootstrap_v2 압축해제+train/val 분할) → 5(코드 패치) →
+   6(finetune.py 작성) → **7(앙상블 5개 학습, seed 0~4 순차, RTX면 맥북보다
+   훨씬 빠를 것)**.
+6. 학습 끝나면 `{BASE_DIR}/finetune_out_ensemble_v2_seed{0..4}/best.pth`
+   (+`best_ll.pth`) 총 10개 파일을 **Mac의 `fine-tune/outputs/
+   ensemble_bootstrap_v2/seed{N}/`로 가져오기**(USB/드라이브/AirDrop 등,
+   폴더 구조는 기존 `ensemble_bootstrap_v1`과 동일하게).
+7. 가져온 뒤 Mac에서: 평가 스크립트들의 `ENSEMBLE_DIR`을 `_v1`→`_v2`로 바꿔서
+   재검증 → 결과 괜찮으면 GitHub 릴리즈로 올리고 몽타주 제작(사용자 요청,
+   §3 -3의 3번 참고) → `da_trust_review.ipynb`도 v2 앙상블 쓰도록 갱신할지 결정.
+
 ## 3. 다음 할 일 (미완료, 우선순위 순)
 
 -3. **[진행 중 — §2.20~§2.22]** da pseudo label 개선 파이프라인의 다음 단계는
