@@ -1374,12 +1374,14 @@ Mac 왕복이 필요했던 단계는 결과적으로 없었음.
    `scripts/clrernet_decode.py`(작성해둔 numpy 디코더)와 함께 나중에 처음부터 재시도.
    우선순위 낮음(YOLOPv2로 이미 충분히 좋은 ll 소스 확보됨).
 10. **[2026-08-13 사용자 요청]** **Jetson Orin(reComputer Super J4012, 대회 본선에
-    실제로 쓰는 그 PC)에서 원조 TwinLiteNet과 TwinLiteNet-KMU 둘 다 돌려서 성능(FPS,
-    batch=1) 측정하고 레포에 정리할 것.** 지금 README의 속도 표(원조 vs TwinLiteNet-KMU,
-    46.3fps vs 91.5fps)는 학습 PC(RX 9070 XT, ROCm) 기준이라 실제 배포 하드웨어
-    (Jetson Orin NX 16GB, JetPack 6)와 다름 — 실차에 올라가는 하드웨어에서 잰 숫자가
-    따로 필요함. `scripts/eval/measure_model_speed.py`(이미 있음, RX 9070 XT 측정에
-    쓴 스크립트로 추정)를 Jetson에서 재사용 가능한지 확인하고, 결과를 README 속도
+    실제로 쓰는 그 PC) + 기존 자이카 Y모델 내장 AMD 미니PC(AMD Ryzen 64bit/RX Vega 8,
+    대회 초반에 쓰던 원래 차량 PC) 둘 다에서 원조 TwinLiteNet과 TwinLiteNet-KMU를
+    돌려서 성능(FPS, batch=1) 측정하고 레포에 정리할 것.** 지금 README의 속도 표(원조
+    vs TwinLiteNet-KMU, 46.3fps vs 91.5fps)는 학습 PC(RX 9070 XT, ROCm) 기준이라 실제
+    배포 하드웨어(Jetson Orin NX 16GB, JetPack 6 / AMD 미니PC)와 다름 — 실차에
+    올라가는 하드웨어 두 종류에서 각각 잰 숫자가 따로 필요함. `scripts/eval/
+    measure_model_speed.py`(이미 있음, RX 9070 XT 측정에 쓴 스크립트로 추정)를 두
+    PC에서 재사용 가능한지 확인하고, 결과를 README 속도
     비교 표에 추가(또는 별도 표로).
 
 ## 4. 환경/도구 메모
