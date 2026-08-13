@@ -170,12 +170,12 @@ scripts/                                             # 기능별로 분류된 �
   export/                                              #   ONNX export
 ```
 
-데이터셋 원본/중간산출물은 용량 문제로 이 레포에 포함하지 않음(`.gitignore` 참고) —
-[Google Drive](https://drive.google.com/drive/folders/1BPueQj5-elPWAJizp9um2Z4ZGoI4HCSK?usp=sharing)로
-별도 관리.
+데이터셋 원본/중간산출물은 용량 문제로 이 레포에 포함하지 않음(`.gitignore` 참고,
+아래 "관련 링크"에서 Drive로 별도 관리).
 
-## 관련 레포
+## 관련 링크
 
+- 데이터셋(원본/중간산출물, Google Drive): [TwinLiteNet-KMU dataset](https://drive.google.com/drive/folders/1BPueQj5-elPWAJizp9um2Z4ZGoI4HCSK?usp=sharing)
 - 베이스 모델: [chequanghuy/TwinLiteNetPlus](https://github.com/chequanghuy/TwinLiteNetPlus)
 - 원조 모델: [chequanghuy/TwinLiteNet](https://github.com/chequanghuy/TwinLiteNet)
 - ll pseudo label 소스: [CAIC-AD/YOLOPv2](https://github.com/CAIC-AD/YOLOPv2)
