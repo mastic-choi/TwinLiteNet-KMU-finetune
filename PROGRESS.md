@@ -1,4 +1,4 @@
-# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-12 갱신, 8회차)
+# TwinLiteNet+ 트랙 파인튜닝 — 진행 상황 (2026-08-13 갱신, 9회차)
 
 이 문서는 세션이 끊겨도 다음 LLM/사람이 바로 이어서 작업할 수 있게 만든 상태 기록이다.
 읽는 순서: 1) 목표 → 2) 지금까지 한 일(시간순) → 3) 알아낸 버그/교훈 → 4) 다음 할 일 → 5) 파일/경로 참조.
@@ -1073,6 +1073,30 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
 - **다음**: 재학습 완료까지 대기(체크포인트 재개 로직 유효, epoch27부터 재개
   중) → 완료되면 ONNX export + `track_drive/config.py` `DL_INPUT_H` 반영 +
   커밋/푸시 → 오늘 할 일 종료, 이후 PC 종료(사용자 지시).
+
+### 2.27 **[버그 발견+수정]** `best.onnx`의 external-data 참조 파일명 불일치 —
+    실차 미니 PC(AMD Ryzen 7 5700U)에서 배포 모델 최초 로드 시도 중 발견
+    (2026-08-13, 9회차)
+
+- 실차에 실제로 들어가는 **AMD 미니 PC(Ryzen 7 5700U, 내장 Radeon Graphics
+  Lucienne/Vega 8, RAM 15GB, ROCm 미설치·사실상 미지원)**에 레포를 처음 클론해서
+  `outputs/models/best.onnx`를 onnxruntime(CPUExecutionProvider)으로 로드하려다
+  실패: `cannot get file size: ... twinlitenet_kmu_v1.2.0.onnx.data`.
+  README/레포엔 `best.onnx` + `best.onnx.data` 페어로 안내돼 있는데, 실제
+  `best.onnx` 내부 protobuf의 external-data `location` 필드는 예전 릴리즈 파일명
+  (`twinlitenet_kmu_v1.2.0.onnx.data`)을 그대로 갖고 있었음 — 아마 릴리즈 산출물을
+  `best.onnx`로 리네임하는 과정에서 파일명만 바꾸고 onnx 내부 메타데이터는 안 바꿔서
+  생긴 불일치로 추정. **레포를 새로 클론하는 사람은 전부 이 에러를 겪게 되는 상태였음.**
+- **수정**: `onnx` 파이썬 패키지로 `best.onnx`를 `load_external_data=False`로 열어서
+  모든 텐서의 `external_data location`을 `best.onnx.data`로 재작성 후 저장(가중치
+  자체는 안 건드림, 참조 문자열만 수정). 수정 후 `best.onnx`(507KB→505KB, 메타데이터만
+  변경) + `best.onnx.data`(1.9MB, 원본 그대로) 조합으로 정상 로드 확인.
+- **이 미니 PC 성능 체크** (CPU만, ROCm 미지원 iGPU라 GPU 가속 불가):
+  medium config, 640×384 입력 기준 **~10.8fps(92.6ms/frame)**, 학습에 쓴 RX 9070 XT
+  ROCm(91.5fps, README 참고)의 약 1/9. **결론: 이 미니 PC는 학습용으로는 부적합(GPU
+  가속 없음, RAM도 64GB 대비 부족) — 학습은 계속 데스크톱(RX 9070 XT)에서 진행하고,
+  이 PC는 실차 배포/추론 검증용으로만 쓸 것.** 실제 실차 제어 루프가 요구하는 fps와
+  10.8fps를 비교해서 충분한지 확인 필요(다음 할 일).
 
 ### 데스크톱(원래 FOSCAR RTX 지원 예정이었으나 무산, 실제로는 최준수 개인 PC/RX 9070 XT)에서 할 일 체크리스트
 
