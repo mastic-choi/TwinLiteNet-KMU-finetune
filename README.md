@@ -28,26 +28,30 @@ Traxxas 1:10 스케일 섀시, 170° 어안렌즈 640×480 카메라. 대회 후
 
 ## Results
 
-### 실제 주행 비교 (원조 TwinLiteNet vs TwinLiteNet-KMU)
+### 실제 주행 비교 (원조 TwinLiteNet vs TwinLiteNet-KMU v1.0.0 vs v1.2.0)
 
-`dataset/`의 연속 프레임을 그대로 이어 붙여 실제 주행처럼 재생되는 GIF. 왼쪽이 원조
-TwinLiteNet, 오른쪽이 TwinLiteNet-KMU(medium config, 40epoch). 파란색=주행가능영역,
+`dataset/`의 연속 프레임을 그대로 이어 붙여 실제 주행처럼 재생되는 GIF, 3-way
+비교(왼쪽부터 원조 TwinLiteNet / v1.0.0 / v1.2.0). 파란색=주행가능영역,
 빨간색=차선, 노란 박스=실차 제어에 실제로 쓰는 ROI.
-
-**커브 구간(S자, frame_000800~000935)** — 원조 모델은 커브 내내 주행가능영역이 트랙
-경계 밖 회색 바닥까지 계속 삐져나감.
-
-![커브 구간 비교](outputs/montages/curve_old_vs_new.gif)
-
-**커브 구간 2(frame_000400~000480)** — 첫 번째와 다른 지점의 커브 구간. 회전
-바깥쪽으로 과다포함되는 문제가 가장 뚜렷하게 보임.
-
-![커브 구간 2 비교](outputs/montages/curve2_old_vs_new.gif)
 
 **직진 구간(frame_000933~000985, 대조군)** — 직진에서는 원조 모델도 원래 크게 나쁘지
 않다는 걸 보여주는 대조군. 문제는 특히 커브에서 두드러짐.
 
-![직진 구간 비교](outputs/montages/straight_old_vs_new.gif)
+![직진 구간 비교](outputs/montages/straight_3way.gif)
+
+**커브 구간(S자, frame_000800~000935)** — 원조 모델은 커브 내내 주행가능영역이 트랙
+경계 밖 회색 바닥까지 계속 삐져나감.
+
+![커브 구간 비교](outputs/montages/curve_3way.gif)
+
+**frame_001766 부근(frame_001700~001830)** — 딥앙상블 검증(§ 아래 섹션)에서 v1.0.0의
+약점 프레임으로 확인됐던 구간, 사람·라바콘이 섞여있는 복잡한 장면.
+
+![frame_001766 구간 비교](outputs/montages/frame1766_3way.gif)
+
+**frame_000220~000252** — 커브에서 직선 복도로 이어지는 구간.
+
+![frame_000220 구간 비교](outputs/montages/segment220_3way.gif)
 
 ### 라벨링 파이프라인 → 최종 모델
 
