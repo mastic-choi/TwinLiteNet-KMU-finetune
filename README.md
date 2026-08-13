@@ -123,15 +123,26 @@ CPU 단일 스레드 연산에서는 오히려 오버헤드로 작용하는 것�
 ### 실차 배포 PC(Jetson Orin NX) 기준 참고 속도
 
 본선 경기에 실제로 쓰인 **reComputer Super J4012(NVIDIA Jetson Orin NX 16GB,
-JetPack 6, CUDA 12.6)**에서 두 모델을 각각 자기 네이티브 런타임으로 direct 측정한
-값 — 원조는 PyTorch(CUDA), KMU는 ONNX Runtime(CUDAExecutionProvider)로 런타임
-자체가 달라서 위 RX 9070 XT ROCm 표와 나란히 비교할 수는 없고 참고용
-(batch=1, warmup 20회 후 200회 평균).
+JetPack 6, CUDA 12.6)**에서 두 모델 다 PyTorch/CUDA로 동일하게 측정한 값(위
+RX 9070 XT ROCm 표와는 GPU가 다른 별개 하드웨어라 나란히 비교할 수는 없고
+참고용, batch=1, warmup 20회 후 500회 평균):
 
 | Model | Input | Runtime | Speed (batch=1) |
 |:-----:|:-----:|:-------:|:----------------:|
-| TwinLiteNet (원조) | 640×360 | PyTorch, CUDA | 30.3 fps (33.0ms/frame) |
-| **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | ONNX Runtime, CUDAExecutionProvider | 28.4 fps (35.2ms/frame) |
+| TwinLiteNet (원조) | 640×360 | PyTorch, CUDA | 31.8 fps (31.4ms/frame) |
+| **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | PyTorch, CUDA | 27.1 fps (36.9ms/frame) |
+
+**RX 9070 XT(ROCm)에서는 KMU가 원조보다 ~2배 빠른데, Jetson Orin NX에서는 오히려
+KMU가 15%가량 더 느리다** — 런타임 차이 때문은 아니고(ONNX Runtime으로 재도
+27~29fps대로 동일), conv 계열 레이어 개수 차이가 원인으로 보인다. 파라미터 수는
+두 모델이 비슷한데(439,633 vs 478,876, +9%) conv+conv-transpose 레이어 개수는
+원조 58개 대비 KMU 133개로 **2.3배** 많다(CAAM 어텐션의 PAM/CAM 모듈이 여러 단계에
+query/key/value용 소형 1×1 conv를 추가로 끼워 넣는 구조). RX 9070 XT처럼 코어
+수·메모리 대역폭이 넉넉한 데스크탑 GPU에서는 이런 "저용량·고빈도" 커널 패턴의
+launch 오버헤드가 파이프라이닝으로 가려지지만, 코어 수가 훨씬 적은 Jetson Orin
+NX에서는 그 오버헤드가 상대적으로 더 크게 드러나는 것으로 보인다(엄밀한 커널
+단위 프로파일링까지는 안 해봄, ONNX Runtime profiling 기준 attention의 Softmax
+1회당 평균 2.2ms로 특히 비쌈).
 
 ## 학습된 모델
 
