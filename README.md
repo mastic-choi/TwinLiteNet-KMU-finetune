@@ -1,5 +1,5 @@
 <div align="center">
-<h1>TwinLiteNet+ KMU Track Fine-tune 🏎️</h1>
+<h1>TwinLiteNet-KMU 🏎️</h1>
 <p><a href="https://auto-contest.kookmin.ac.kr/">제9회 국민대학교 자율주행 경진대회</a> 참여작 —
 <a href="https://github.com/mastic-choi/UMK">UMK/track_drive</a>의 차선·주행가능영역
 인식 모델을, 미래관(신관) 4층 자율주행스튜디오 트랙에 맞춰 파인튜닝한다.</p>
@@ -16,7 +16,8 @@
 같은 트랙·같은 차량으로만 주행하는 좁은 도메인이라 범용 모델보다 우리 데이터로 직접
 파인튜닝하는 게 효율적이라 판단해서 시작한 프로젝트. 베이스 모델은 원조 TwinLiteNet의
 후속작인 [TwinLiteNetPlus](https://github.com/chequanghuy/TwinLiteNetPlus)(CAAM 어텐션
-모듈 추가, nano/small/medium/large 4단계 크기 지원)를 썼다.
+모듈 추가, nano/small/medium/large 4단계 크기 지원)를 썼고, 이를 우리 트랙 데이터로
+파인튜닝한 결과물을 **TwinLiteNet-KMU**라고 부른다.
 
 ### 차량 사양
 
@@ -27,10 +28,10 @@ Traxxas 1:10 스케일 섀시, 170° 어안렌즈 640×480 카메라. 대회 후
 
 ## Results
 
-### 실제 주행 비교 (원조 TwinLiteNet vs 우리 파인튜닝 모델)
+### 실제 주행 비교 (원조 TwinLiteNet vs TwinLiteNet-KMU)
 
 `dataset/`의 연속 프레임을 그대로 이어 붙여 실제 주행처럼 재생되는 GIF. 왼쪽이 원조
-TwinLiteNet, 오른쪽이 우리가 40epoch 파인튜닝한 모델(medium config). 파란색=주행가능영역,
+TwinLiteNet, 오른쪽이 TwinLiteNet-KMU(medium config, 40epoch). 파란색=주행가능영역,
 빨간색=차선, 노란 박스=실차 제어에 실제로 쓰는 ROI.
 
 **커브 구간(S자, frame_000800~000935)** — 원조 모델은 커브 내내 주행가능영역이 트랙
@@ -52,7 +53,7 @@ TwinLiteNet, 오른쪽이 우리가 40epoch 파인튜닝한 모델(medium config
 
 왼쪽부터: **① 원조 TwinLiteNet 추론 → ② 우리가 만든 da 라벨(사람 라벨링 + 파인튜닝
 모델 pseudo-label) → ③ YOLOPv2 기반 ll 라벨(skeleton 정제) → ④ 이 라벨들로 학습한
-최종 파인튜닝 모델의 추론 결과**. 즉 ②③이 학습 데이터, ④가 그 데이터로 학습한 결과물.
+TwinLiteNet-KMU의 추론 결과**. 즉 ②③이 학습 데이터, ④가 그 데이터로 학습한 결과물.
 
 ![라벨링 파이프라인](outputs/montages/pipeline_montage.png)
 
@@ -65,7 +66,7 @@ medium)의 파인튜닝 전/후**를 우리 GT 기준 IoU로 직접 비교한 �
 | Model | Drivable Area mIoU | Lane Line Acc | Lane Line IoU |
 |:-----:|:-------------------:|:-------------:|:--------------:|
 | TwinLiteNetPlus (pretrained, BDD100K, 파인튜닝 0회) | 0.815 | 0.669 | 0.132 |
-| **TwinLiteNetPlus (우리 트랙 파인튜닝, medium, 40epoch)** | **0.935 (+0.120)** :arrow_up: | **0.802 (+0.133)** :arrow_up: | **0.552 (+0.420, 4.2×)** :arrow_up: |
+| **TwinLiteNet-KMU (medium, 40epoch)** | **0.935 (+0.120)** :arrow_up: | **0.802 (+0.133)** :arrow_up: | **0.552 (+0.420, 4.2×)** :arrow_up: |
 
 특히 ll IoU가 4배 이상 뛴 게 이 프로젝트의 원래 목표(원조 모델이 차선을 거의 못 잡던
 문제)와 정확히 일치하는 지표.
@@ -82,12 +83,12 @@ TwinLiteNetPlus는 nano/small/medium/large 4단계를 지원 — 우리는 정�
 | **medium (채택)** | **478,876** |
 | large | 1,943,911 |
 
-### 원조 TwinLiteNet vs TwinLiteNetPlus — 크기/속도
+### 원조 TwinLiteNet vs TwinLiteNet-KMU — 크기/속도
 
 | Model | Params | Input | Speed (RX 9070 XT, ROCm, batch=1) |
 |:-----:|:------:|:-----:|:----------------------------------:|
 | TwinLiteNet (원조) | 439,633 | 640×360 | 46.3 fps |
-| **TwinLiteNetPlus (medium, 우리 채택)** | 478,876 | 640×384 | **91.5 fps** |
+| **TwinLiteNet-KMU (medium)** | 478,876 | 640×384 | **91.5 fps** |
 
 파라미터 수는 비슷한데(약 9% 많음) 추론 속도는 약 2배 — CAAM 어텐션 구조가 원조보다
 효율적인 것으로 보임(엄밀한 알고리즘 단위 프로파일링은 안 해봄, 같은 GPU/배치에서의
@@ -95,9 +96,9 @@ end-to-end 측정치).
 
 ## 학습된 모델
 
-- **`outputs/models/best.onnx`** (+ `best.onnx.data`) — medium config, 40epoch, ll
-  IOU 기준 best 체크포인트. `track_drive`의 `TwinLiteNetEngine`과 바로 호환
-  (입력 `images`, 출력 `da`/`ll`, 입력 크기 640×384).
+- **`outputs/models/best.onnx`** (+ `best.onnx.data`) — TwinLiteNet-KMU, medium
+  config, 40epoch, ll IOU 기준 best 체크포인트. `track_drive`의
+  `TwinLiteNetEngine`과 바로 호환(입력 `images`, 출력 `da`/`ll`, 입력 크기 640×384).
 - 실차 반영 시 `perception/dl_lane.py`의 `DL_INPUT_H`를 360 → **384**로 바꿔야 함
   (letterbox 버그 수정 후 학습 해상도가 변경됨 — 자세한 배경은 PROGRESS.md 참고).
 - 실차에 바로 쓰기 전에 반드시 실제 주행 테스트로 검증할 것 — 지금까지는 정적
@@ -170,7 +171,8 @@ scripts/                                             # 기능별로 분류된 �
 ```
 
 데이터셋 원본/중간산출물은 용량 문제로 이 레포에 포함하지 않음(`.gitignore` 참고) —
-별도 zip/Drive로 관리.
+[Google Drive](https://drive.google.com/drive/folders/1BPueQj5-elPWAJizp9um2Z4ZGoI4HCSK?usp=sharing)로
+별도 관리.
 
 ## 관련 레포
 
