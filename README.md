@@ -101,6 +101,21 @@ TwinLiteNetPlus는 nano/small/medium/large 4단계를 지원 — 우리는 정�
 효율적인 것으로 보임(엄밀한 알고리즘 단위 프로파일링은 안 해봄, 같은 GPU/배치에서의
 end-to-end 측정치).
 
+### 실차 배포 PC(AMD 미니 PC) 기준 참고 속도
+
+실차에 실제로 들어가는 **AMD Ryzen 7 5700U 미니 PC**(내장 Radeon Graphics
+Lucienne/Vega 8, ROCm 미지원)에서 `outputs/models/best.onnx`(v1.2.0, medium,
+640×384)를 onnxruntime **CPU**로 직접 측정한 값 — 학습에 쓴 RX 9070 XT(ROCm)와는
+완전히 다른 하드웨어라 위 표와 나란히 비교할 수는 없고 참고용:
+
+| Model | Device | Speed (batch=1) |
+|:-----:|:------:|:----------------:|
+| **TwinLiteNet-KMU (medium, v1.2.0)** | AMD Ryzen 7 5700U, **CPU only** | **10.8 fps** (92.6ms/frame) |
+
+원조 TwinLiteNet은 이 PC에 없어서 동일 비교는 안 했음. RX 9070 XT ROCm(91.5fps)
+대비 약 1/9 — iGPU가 ROCm 미지원이라 GPU 가속 없이 CPU로만 돈 결과. 자세한 경위는
+[`PROGRESS.md` §2.27](./PROGRESS.md) 참고.
+
 ## 학습된 모델
 
 - **`outputs/models/best.onnx`** (+ `best.onnx.data`) — TwinLiteNet-KMU
