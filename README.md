@@ -104,16 +104,20 @@ end-to-end 측정치).
 ### 실차 배포 PC(AMD 미니 PC) 기준 참고 속도
 
 실차에 실제로 들어가는 **AMD Ryzen 7 5700U 미니 PC**(내장 Radeon Graphics
-Lucienne/Vega 8, ROCm 미지원)에서 `outputs/models/best.onnx`(v1.2.0, medium,
-640×384)를 onnxruntime **CPU**로 직접 측정한 값 — 학습에 쓴 RX 9070 XT(ROCm)와는
-완전히 다른 하드웨어라 위 표와 나란히 비교할 수는 없고 참고용:
+Lucienne/Vega 8, ROCm 미지원)에서 두 모델 다 onnxruntime **CPU**로 직접 측정한 값 —
+학습에 쓴 RX 9070 XT(ROCm)와는 완전히 다른 하드웨어라 위 표와 나란히 비교할 수는
+없고 참고용:
 
-| Model | Device | Speed (batch=1) |
-|:-----:|:------:|:----------------:|
-| **TwinLiteNet-KMU (medium, v1.2.0)** | AMD Ryzen 7 5700U, **CPU only** | **10.8 fps** (92.6ms/frame) |
+| Model | Input | Device | Speed (batch=1) |
+|:-----:|:-----:|:------:|:----------------:|
+| TwinLiteNet (원조) | 640×360 | AMD Ryzen 7 5700U, **CPU only** | 12.4 fps (80.5ms/frame) |
+| **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | AMD Ryzen 7 5700U, **CPU only** | **10.8 fps** (92.6ms/frame) |
 
-원조 TwinLiteNet은 이 PC에 없어서 동일 비교는 안 했음. RX 9070 XT ROCm(91.5fps)
-대비 약 1/9 — iGPU가 ROCm 미지원이라 GPU 가속 없이 CPU로만 돈 결과. 자세한 경위는
+**GPU(RX 9070 XT)에서는 KMU가 원조보다 ~2배 빠른데(91.5 vs 46.3fps), CPU에서는
+반대로 원조가 KMU보다 살짝 더 빠르다** — CAAM 어텐션 구조가 GPU 병렬화엔 유리하지만
+CPU 단일 스레드 연산에서는 오히려 오버헤드로 작용하는 것으로 보임(엄밀한 프로파일링은
+안 해봄, end-to-end 측정치). 두 모델 다 RX 9070 XT ROCm 대비 CPU 속도가 1/4~1/8
+수준 — iGPU가 ROCm 미지원이라 GPU 가속 없이 CPU로만 돈 결과. 자세한 경위는
 [`PROGRESS.md` §2.27](./PROGRESS.md) 참고.
 
 ## 학습된 모델
