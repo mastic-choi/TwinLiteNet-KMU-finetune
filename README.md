@@ -55,9 +55,10 @@ Traxxas 1:10 스케일 섀시, 170° 어안렌즈 640×480 카메라. 대회 후
 
 ### 라벨링 파이프라인 → 최종 모델
 
-왼쪽부터: **① 원조 TwinLiteNet 추론 → ② 우리가 만든 da 라벨(사람 라벨링 + 파인튜닝
-모델 pseudo-label) → ③ YOLOPv2 기반 ll 라벨(skeleton 정제) → ④ 이 라벨들로 학습한
-TwinLiteNet-KMU의 추론 결과**. 즉 ②③이 학습 데이터, ④가 그 데이터로 학습한 결과물.
+왼쪽부터: **① 원조 TwinLiteNet 추론 → ② 우리가 만든 da 라벨(사람 라벨링 + 딥앙상블
+pseudo-label) → ③ YOLOPv2 기반 ll 라벨(skeleton 정제) → ④ 이 라벨들로 학습한
+TwinLiteNet-KMU v1.2.0의 추론 결과**. 즉 ②③이 학습 데이터, ④가 그 데이터로 학습한
+결과물.
 
 ![라벨링 파이프라인](outputs/montages/pipeline_montage.png)
 
