@@ -1104,6 +1104,43 @@ lap_005(2734장)를 지금 있는 앙상블(v1, 156장 기반)로 바로 pseudo-
   연산에선 오버헤드로 작용하는 것으로 추정(엄밀한 프로파일링 안 해봄). README에도
   두 모델 CPU 비교표로 반영함.
 
+### 2.28 Jetson Orin NX(실차 본선 PC) 추론 속도 벤치마크 — CAAM 어텐션 conv 레이어
+    개수가 원인 (2026-08-13, 팀원 이지유)
+
+- §3 다음 할 일 10번(2026-08-13 사용자 요청) 후속 — 대회 본선에 실제로 쓰인
+  **reComputer Super J4012(NVIDIA Jetson Orin NX 16GB, JetPack 6, CUDA 12.6)**에서
+  원조 TwinLiteNet vs TwinLiteNet-KMU(v1.2.0) 추론 속도(FPS, batch=1) 측정 — 팀원
+  이지유가 진행.
+- **[방법론 실수, 1차 시도]** 첫 커밋(`ca6969d`)은 원조를 PyTorch로, KMU는 ONNX
+  Runtime(CUDAExecutionProvider)으로 서로 다른 런타임으로 재서 비교함 — 런타임이
+  다르면 모델 구조 차이가 아니라 런타임 자체의 오버헤드 차이가 섞여 들어가서
+  공정한 비교가 아님.
+- **수정(`9284a80`)**: 둘 다 PyTorch/CUDA로 동일하게 재측정(warmup 20회 후 500회
+  평균) — 결과: 원조 31.8fps(31.4ms/frame) vs KMU 27.1fps(36.9ms/frame), **KMU가
+  오히려 15%가량 더 느림**. RX 9070 XT(ROCm, 학습 PC)에서는 KMU가 원조보다 ~2배
+  빠르다는 결과(README 크기/속도 표)와 정반대 방향이라 원인 조사 진행.
+  - 런타임 차이가 원인은 아님을 확인(ONNX Runtime으로 재측정해도 27~29fps대로
+    동일).
+  - **원인**: conv 계열 레이어(conv + conv-transpose) 개수를 세보니 원조 58개
+    대비 KMU 133개로 **2.3배** 많음 — 파라미터 수는 두 모델이 비슷한데도
+    (439,633 vs 478,876, +9%) 레이어 개수 차이는 훨씬 큼. CAAM 어텐션의 PAM/CAM
+    모듈이 여러 단계에 query/key/value용 소형 1×1 conv를 추가로 끼워 넣는
+    구조라, 파라미터는 적어도 커널 호출 횟수가 많아짐.
+  - RX 9070 XT처럼 코어 수·메모리 대역폭이 넉넉한 데스크탑 GPU에서는 이런
+    "저용량·고빈도" 커널 launch 오버헤드가 파이프라이닝으로 가려지지만, 코어
+    수가 훨씬 적은 Jetson Orin NX에서는 그 오버헤드가 상대적으로 크게 드러나는
+    것으로 추정(엄밀한 커널 단위 프로파일링까지는 안 함). ONNX Runtime
+    profiling 기준 attention의 Softmax 1회당 평균 2.2ms로 특히 비쌈.
+- **결론**: "GPU 세대/아키텍처가 다르면 같은 모델이라도 상대적 속도 우위가
+  뒤집힐 수 있다" — 학습 PC(RX 9070 XT) 기준 속도만으로 실제 배포 하드웨어에서의
+  속도를 예단하면 안 됨. §2.27(AMD 미니 PC, CPU 기준 역시 KMU가 원조보다 느림)과
+  같은 패턴. 두 하드웨어 다 KMU가 원조보다 느려서, "학습 PC(GPU)에서 빠른 모델이
+  실배포 엣지 하드웨어에서도 빠를 거라 가정하면 안 된다"는 게 이번 벤치마크의
+  핵심 시사점.
+- README에는 결과 표 + 요약 1~2문장만 남기고, 위 방법론 실수/원인 조사 과정은 이
+  섹션에만 기록(README는 "대문", 시행착오/조사 과정은 PROGRESS.md 전담 원칙,
+  §2.13/§2.14 참고).
+
 ### 데스크톱(원래 FOSCAR RTX 지원 예정이었으나 무산, 실제로는 최준수 개인 PC/RX 9070 XT)에서 할 일 체크리스트
 
 **[사실상 obsolete, 참고용으로만 남김]** 아래 체크리스트는 원래 "Mac이 조율하고
@@ -1343,16 +1380,13 @@ Mac 왕복이 필요했던 단계는 결과적으로 없었음.
 9. CLRerNet은 다운로드 리소스(`clrernet_onnx/`, 1.9GB)를 정리 삭제함(§2.11) — 필요하면
    `scripts/clrernet_decode.py`(작성해둔 numpy 디코더)와 함께 나중에 처음부터 재시도.
    우선순위 낮음(YOLOPv2로 이미 충분히 좋은 ll 소스 확보됨).
-10. **[2026-08-13 사용자 요청]** **Jetson Orin(reComputer Super J4012, 대회 본선에
-    실제로 쓰는 그 PC) + 기존 자이카 Y모델 내장 AMD 미니PC(AMD Ryzen 64bit/RX Vega 8,
-    대회 초반에 쓰던 원래 차량 PC) 둘 다에서 원조 TwinLiteNet과 TwinLiteNet-KMU를
-    돌려서 성능(FPS, batch=1) 측정하고 레포에 정리할 것.** 지금 README의 속도 표(원조
-    vs TwinLiteNet-KMU, 46.3fps vs 91.5fps)는 학습 PC(RX 9070 XT, ROCm) 기준이라 실제
-    배포 하드웨어(Jetson Orin NX 16GB, JetPack 6 / AMD 미니PC)와 다름 — 실차에
-    올라가는 하드웨어 두 종류에서 각각 잰 숫자가 따로 필요함. `scripts/eval/
-    measure_model_speed.py`(이미 있음, RX 9070 XT 측정에 쓴 스크립트로 추정)를 두
-    PC에서 재사용 가능한지 확인하고, 결과를 README 속도
-    비교 표에 추가(또는 별도 표로).
+10. **[완료, 2026-08-13 §2.27/§2.28]** ~~Jetson Orin(reComputer Super J4012, 대회
+    본선에 실제로 쓰는 그 PC) + 기존 자이카 Y모델 내장 AMD 미니PC 둘 다에서 원조
+    TwinLiteNet과 TwinLiteNet-KMU 성능(FPS, batch=1) 측정~~ — AMD 미니 PC(CPU only,
+    §2.27)·Jetson Orin NX(PyTorch/CUDA, §2.28) 둘 다 측정 완료, 결과 README에 반영.
+    **두 하드웨어 모두 KMU가 원조보다 느림**(AMD 미니PC 10.8 vs 12.4fps, Jetson
+    27.1 vs 31.8fps) — RX 9070 XT(학습 PC, GPU) 기준 "KMU가 2배 빠르다"는 결과와
+    반대 방향이니, 실차 배포 전 이 점 감안할 것(§2.28 결론 참고).
 
 ## 4. 환경/도구 메모
 

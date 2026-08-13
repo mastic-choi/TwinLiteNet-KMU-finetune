@@ -114,11 +114,9 @@ Lucienne/Vega 8, ROCm 미지원)에서 두 모델 다 onnxruntime **CPU**로 직
 | **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | AMD Ryzen 7 5700U, **CPU only** | **10.8 fps** (92.6ms/frame) |
 
 **GPU(RX 9070 XT)에서는 KMU가 원조보다 ~2배 빠른데(91.5 vs 46.3fps), CPU에서는
-반대로 원조가 KMU보다 살짝 더 빠르다** — CAAM 어텐션 구조가 GPU 병렬화엔 유리하지만
-CPU 단일 스레드 연산에서는 오히려 오버헤드로 작용하는 것으로 보임(엄밀한 프로파일링은
-안 해봄, end-to-end 측정치). 두 모델 다 RX 9070 XT ROCm 대비 CPU 속도가 1/4~1/8
-수준 — iGPU가 ROCm 미지원이라 GPU 가속 없이 CPU로만 돈 결과. 자세한 경위는
-[`PROGRESS.md` §2.27](./PROGRESS.md) 참고.
+반대로 원조가 KMU보다 살짝 더 빠르다** — CAAM 어텐션 구조가 GPU 병렬화엔 유리해도
+CPU 단일 스레드 연산에서는 오히려 오버헤드로 작용하는 것으로 보인다. 자세한 조사
+경위는 [`PROGRESS.md` §2.27](./PROGRESS.md) 참고.
 
 ### 실차 배포 PC(Jetson Orin NX) 기준 참고 속도
 
@@ -133,16 +131,9 @@ RX 9070 XT ROCm 표와는 GPU가 다른 별개 하드웨어라 나란히 비교�
 | **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | PyTorch, CUDA | 27.1 fps (36.9ms/frame) |
 
 **RX 9070 XT(ROCm)에서는 KMU가 원조보다 ~2배 빠른데, Jetson Orin NX에서는 오히려
-KMU가 15%가량 더 느리다** — 런타임 차이 때문은 아니고(ONNX Runtime으로 재도
-27~29fps대로 동일), conv 계열 레이어 개수 차이가 원인으로 보인다. 파라미터 수는
-두 모델이 비슷한데(439,633 vs 478,876, +9%) conv+conv-transpose 레이어 개수는
-원조 58개 대비 KMU 133개로 **2.3배** 많다(CAAM 어텐션의 PAM/CAM 모듈이 여러 단계에
-query/key/value용 소형 1×1 conv를 추가로 끼워 넣는 구조). RX 9070 XT처럼 코어
-수·메모리 대역폭이 넉넉한 데스크탑 GPU에서는 이런 "저용량·고빈도" 커널 패턴의
-launch 오버헤드가 파이프라이닝으로 가려지지만, 코어 수가 훨씬 적은 Jetson Orin
-NX에서는 그 오버헤드가 상대적으로 더 크게 드러나는 것으로 보인다(엄밀한 커널
-단위 프로파일링까지는 안 해봄, ONNX Runtime profiling 기준 attention의 Softmax
-1회당 평균 2.2ms로 특히 비쌈).
+KMU가 15%가량 더 느리다** — CAAM 어텐션이 늘리는 conv 레이어 개수(원조 58개 vs
+KMU 133개)가 코어 수 적은 GPU에서 커널 launch 오버헤드로 더 크게 드러나는 것으로
+보인다. 자세한 조사 경위는 [`PROGRESS.md` §2.28](./PROGRESS.md) 참고.
 
 ## 학습된 모델
 
