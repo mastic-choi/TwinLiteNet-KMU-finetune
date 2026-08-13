@@ -120,6 +120,19 @@ CPU 단일 스레드 연산에서는 오히려 오버헤드로 작용하는 것�
 수준 — iGPU가 ROCm 미지원이라 GPU 가속 없이 CPU로만 돈 결과. 자세한 경위는
 [`PROGRESS.md` §2.27](./PROGRESS.md) 참고.
 
+### 실차 배포 PC(Jetson Orin NX) 기준 참고 속도
+
+본선 경기에 실제로 쓰인 **reComputer Super J4012(NVIDIA Jetson Orin NX 16GB,
+JetPack 6, CUDA 12.6)**에서 두 모델을 각각 자기 네이티브 런타임으로 direct 측정한
+값 — 원조는 PyTorch(CUDA), KMU는 ONNX Runtime(CUDAExecutionProvider)로 런타임
+자체가 달라서 위 RX 9070 XT ROCm 표와 나란히 비교할 수는 없고 참고용
+(batch=1, warmup 20회 후 200회 평균).
+
+| Model | Input | Runtime | Speed (batch=1) |
+|:-----:|:-----:|:-------:|:----------------:|
+| TwinLiteNet (원조) | 640×360 | PyTorch, CUDA | 30.3 fps (33.0ms/frame) |
+| **TwinLiteNet-KMU (medium, v1.2.0)** | 640×384 | ONNX Runtime, CUDAExecutionProvider | 28.4 fps (35.2ms/frame) |
+
 ## 학습된 모델
 
 - **`outputs/models/best.onnx`** (+ `best.onnx.data`) — TwinLiteNet-KMU
