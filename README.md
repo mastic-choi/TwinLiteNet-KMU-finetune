@@ -57,19 +57,21 @@ TwinLiteNet-KMU의 추론 결과**. 즉 ②③이 학습 데이터, ④가 그 �
 
 ![라벨링 파이프라인](outputs/montages/pipeline_montage.png)
 
-### 파인튜닝 전/후 정량 비교 (validation set 160장, GT 대비 동일 기준 측정)
+### 파인튜닝 전/후 정량 비교 (사람 GT 1016장 기준, 동일 기준 측정)
 
 원조 TwinLiteNet은 우리 트랙 GT로 학습/검증된 적이 없어서 여기엔 없음(대신 위 주행
-비교 GIF가 old vs new 비교 자료) — 이 표는 **같은 베이스 모델(TwinLiteNetPlus
-medium)의 파인튜닝 전/후**를 우리 GT 기준 IoU로 직접 비교한 것.
+비교 GIF가 old vs new 비교 자료) — 이 표는 **TwinLiteNet-KMU 버전 간(v1.0.0 →
+v1.2.0)**을 같은 사람 GT(`bootstrap_v2`, 1016장) 기준 IoU로 직접 비교한 것.
 
-| Model | Drivable Area mIoU | Lane Line Acc | Lane Line IoU |
-|:-----:|:-------------------:|:-------------:|:--------------:|
-| TwinLiteNetPlus (pretrained, BDD100K, 파인튜닝 0회) | 0.815 | 0.669 | 0.132 |
-| **TwinLiteNet-KMU (medium, 40epoch)** | **0.935 (+0.120)** :arrow_up: | **0.802 (+0.133)** :arrow_up: | **0.552 (+0.420, 4.2×)** :arrow_up: |
+| Model | Drivable Area IoU | Lane Line IoU |
+|:-----:|:-------------------:|:--------------:|
+| TwinLiteNetPlus (pretrained, BDD100K, 파인튜닝 0회) | 0.815 | 0.132 |
+| TwinLiteNet-KMU v1.0.0 (medium, pseudo_dataset_v2 1068장) | 0.945 | 0.577 |
+| **TwinLiteNet-KMU v1.2.0 (medium, bootstrap_v2+lap_005 3446장)** | **0.957** :arrow_up: | **0.599** :arrow_up: |
 
-특히 ll IoU가 4배 이상 뛴 게 이 프로젝트의 원래 목표(원조 모델이 차선을 거의 못 잡던
-문제)와 정확히 일치하는 지표.
+v1.2.0은 딥앙상블로 개선한 da 라벨 + 지그재그 주행으로 수집한 lap_005(비평행 각도
+상황 보강) 데이터로 재학습한 버전 — 자세한 라벨링 경로는 아래 "라벨링 품질 개선"
+섹션 참고.
 
 ### 모델 크기 (config별 파라미터 수)
 
@@ -96,8 +98,9 @@ end-to-end 측정치).
 
 ## 학습된 모델
 
-- **`outputs/models/best.onnx`** (+ `best.onnx.data`) — TwinLiteNet-KMU, medium
-  config, 40epoch, ll IOU 기준 best 체크포인트. `track_drive`의
+- **`outputs/models/best.onnx`** (+ `best.onnx.data`) — TwinLiteNet-KMU
+  [v1.2.0](https://github.com/mastic-choi/TwinLiteNet-KMU-finetune/releases/tag/v1.2.0),
+  medium config, 40epoch, ll IOU 기준 best 체크포인트. `track_drive`의
   `TwinLiteNetEngine`과 바로 호환(입력 `images`, 출력 `da`/`ll`, 입력 크기 640×384).
 - 실차 반영 시 `perception/dl_lane.py`의 `DL_INPUT_H`를 360 → **384**로 바꿔야 함
   (letterbox 버그 수정 후 학습 해상도가 변경됨 — 자세한 배경은 PROGRESS.md 참고).
