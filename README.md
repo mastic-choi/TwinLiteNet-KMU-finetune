@@ -1,7 +1,7 @@
 <div align="center">
 <h1>TwinLiteNet-KMU 🏎️</h1>
 <p><a href="https://auto-contest.kookmin.ac.kr/">제9회 국민대학교 자율주행 경진대회</a> 참여작 —
-<a href="https://github.com/mastic-choi/UMK">UMK/track_drive</a>의 차선·주행가능영역
+<a href="https://github.com/mastic-choi/KURiver-KMU-auto-contest">KURiver-KMU-auto-contest/track_drive</a>의 차선·주행가능영역
 인식 모델을, 미래관(신관) 4층 자율주행스튜디오 트랙에 맞춰 파인튜닝한다.</p>
 </div>
 
@@ -233,7 +233,7 @@ scripts/                                             # 기능별로 분류된 �
 - 베이스 모델: [chequanghuy/TwinLiteNetPlus](https://github.com/chequanghuy/TwinLiteNetPlus)
 - 원조 모델: [chequanghuy/TwinLiteNet](https://github.com/chequanghuy/TwinLiteNet)
 - ll pseudo label 소스: [CAIC-AD/YOLOPv2](https://github.com/CAIC-AD/YOLOPv2)
-- 실차 배포 대상: [mastic-choi/UMK](https://github.com/mastic-choi/UMK) (`track_drive` 패키지)
+- 실차 배포 대상: [mastic-choi/KURiver-KMU-auto-contest](https://github.com/mastic-choi/KURiver-KMU-auto-contest) (`track_drive` 패키지)
 
 ## Special Thanks
 
